@@ -97,32 +97,46 @@ function hash(n: number) {
   return fract(Math.sin(n * 127.1 + 311.7) * 43758.5453)
 }
 
-function voiceSample(t: number) {
-  const word = t * 0.78
-  const id = Math.floor(word)
-  const f = fract(word)
-  const voiced = hash(id + 0.11) > 0.2
-  const attack = Math.min(1, f * 12)
-  const release = f < 0.64 ? 1 : Math.max(0, 1 - (f - 0.64) / 0.36)
-  const strength = voiced ? 0.28 + 0.72 * hash(id + 2.4) : 0.06
-  const env = strength * attack * release
-  const hz = 6.4 + hash(id + 5) * 5.2
-  const fund = Math.sin(t * Math.PI * 2 * hz)
-  const h2 = Math.sin(t * Math.PI * 2 * hz * 2.12 + 0.35) * 0.42
-  const h3 = Math.sin(t * Math.PI * 2 * hz * 3.4 + id) * 0.18
-  const air = Math.sin(t * 23.5 + hash(id) * 8) * 0.1
-  return (fund + h2 + h3 + air) * env
+function mix(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function valueNoise(x: number) {
+  const i = Math.floor(x)
+  const f = x - i
+  const u = f * f * (3 - 2 * f)
+  return mix(hash(i), hash(i + 1), u) * 2 - 1
+}
+
+function field(u: number, seed: number) {
+  return (
+    valueNoise(u * 18.5 + seed) * 0.26 +
+    valueNoise(u * 41.0 + seed * 2.2) * 0.34 +
+    valueNoise(u * 88.0 + seed * 0.7) * 0.24 +
+    valueNoise(u * 165.0 + seed * 3.4) * 0.16
+  )
+}
+
+function speechEnv(t: number, seed: number) {
+  const burst = 0.18 + 0.82 * Math.max(0, Math.sin(t * (4.5 + seed * 0.8) + seed * 3.1)) ** 1.15
+  const phrase = 0.4 + 0.6 * Math.max(0.12, Math.sin(t * (1.15 + seed * 0.2) + seed * 2))
+  const pause = hash(Math.floor(t * (0.8 + seed * 0.2) + seed * 11)) > 0.18 ? 1 : 0.07
+  return burst * phrase * pause
 }
 
 function voiceLift(u: number, t: number) {
-  const env = voiceSample(t)
-  const height = 0.35 + 0.65 * hash(u * 93.7)
-  const standing = 0.7 + 0.3 * Math.sin(u * Math.PI * 5)
-  return env * height * standing
-}
-
-function mix(a: number, b: number, t: number) {
-  return a + (b - a) * t
+  const band = Math.floor(u * 13)
+  const region = speechEnv(t * 1.15 + hash(band) * 7, 0.18 + hash(band + 2) * 0.7)
+  const e1 = speechEnv(t, 0.11)
+  const e2 = speechEnv(t * 1.38 + 0.55, 0.52)
+  const e3 = speechEnv(t * 0.9 + 1.4, 0.88)
+  let y = field(u, 1.12) * (0.28 + 0.72 * e1)
+  y += field(u, 5.4) * e2 * 0.75
+  y += field(u, 9.1) * e3 * 0.4
+  y *= 0.2 + 0.8 * region
+  y = Math.sign(y) * Math.abs(y) ** 0.68
+  y += (hash(u * 240 + Math.floor(t * 26)) * 2 - 1) * e2 * 0.14
+  return Math.max(-1, Math.min(1, y * 1.55))
 }
 
 function drawStar(
@@ -282,7 +296,7 @@ export function paintDynamicSky(
 
   if (frozenStars && blend > 0.001) {
     const center = h * 0.44
-    const waveH = h * 0.09
+    const waveH = h * 0.18
     const lineXs = spacedLineXs(frozenStars, w, unit)
 
     frozenStars.forEach((frozen, i) => {
@@ -295,8 +309,9 @@ export function paintDynamicSky(
       const linedA = Math.max(liveA, (0.42 + star.b * 0.5) * (star.glint ? 1.25 : 1))
       const a = mix(liveA, linedA, blend)
       const homeY = frozen.ny * h
-      const linedY = center + voiceLift(frozen.nx, time) * amp * waveH
-      const x = mix(frozen.nx, lineXs[i] ?? frozen.nx, blend) * w
+      const u = lineXs[i] ?? frozen.nx
+      const linedY = center + voiceLift(u, time) * amp * waveH
+      const x = mix(frozen.nx, u, blend) * w
       drawStar(
         ctx,
         x,
