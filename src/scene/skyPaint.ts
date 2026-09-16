@@ -1,4 +1,5 @@
 import { getPhase, samplePalette, sunDirection } from './dayNight'
+import { getVoice, tickVoice, voiceAmp, voiceBlend } from '../voice'
 
 type Star = {
   x: number
@@ -11,6 +12,142 @@ type Star = {
 }
 
 const STARS: Star[] = makeStars(280)
+
+type FrozenStar = {
+  starIndex: number
+  nx: number
+  ny: number
+}
+
+let frozenStars: FrozenStar[] | null = null
+let pauseOffset = 0
+let frozenClock: number | null = null
+
+function skyTime(real: number, active: boolean) {
+  if (active) {
+    if (frozenClock == null) frozenClock = real - pauseOffset
+    return frozenClock
+  }
+  if (frozenClock != null) {
+    pauseOffset = real - frozenClock
+    frozenClock = null
+  }
+  return real - pauseOffset
+}
+
+function captureFreeze(clock: number) {
+  const drift = (clock * 0.0028) % 1
+  const rows = STARS.map((star, starIndex) => ({
+    starIndex,
+    nx: (star.x + drift) % 1,
+    ny: star.y,
+  }))
+  rows.sort((a, b) => a.nx - b.nx || a.ny - b.ny)
+  frozenStars = rows
+}
+
+function spacedLineXs(rows: FrozenStar[], w: number, unit: number) {
+  const n = rows.length
+  const xs = rows.map((row) => row.nx)
+  const rad = rows.map((row) => {
+    const star = STARS[row.starIndex]
+    return Math.max(0.85 * unit, (star?.r ?? 1) * unit) / w
+  })
+  const pad = 1.35
+  const extra = 2 / w
+  const gap = (i: number, j: number) => ((rad[i] ?? 0) + (rad[j] ?? 0)) * pad + extra
+  const left = 0.016
+  const right = 0.984
+
+  for (let i = 1; i < n; i++) {
+    const minX = (xs[i - 1] ?? 0) + gap(i - 1, i)
+    xs[i] = Math.max(xs[i] ?? 0, minX)
+  }
+  const last = n - 1
+  xs[last] = Math.min(xs[last] ?? 1, right - (rad[last] ?? 0))
+  for (let i = n - 2; i >= 0; i--) {
+    const maxX = (xs[i + 1] ?? 1) - gap(i, i + 1)
+    xs[i] = Math.min(xs[i] ?? 0, maxX)
+  }
+  xs[0] = Math.max(xs[0] ?? 0, left + (rad[0] ?? 0))
+  for (let i = 1; i < n; i++) {
+    xs[i] = Math.max(xs[i] ?? 0, (xs[i - 1] ?? 0) + gap(i - 1, i), left + (rad[i] ?? 0))
+  }
+
+  const first = xs[0] ?? left
+  const end = xs[last] ?? right
+  const overflow = end + (rad[last] ?? 0) - right
+  if (overflow > 0) {
+    const span = end - first
+    const fit = right - left - (rad[0] ?? 0) - (rad[last] ?? 0)
+    if (span > 0 && fit > 0) {
+      const s = Math.min(1, fit / span)
+      const origin = left + (rad[0] ?? 0)
+      for (let i = 0; i < n; i++) xs[i] = origin + ((xs[i] ?? 0) - first) * s
+    }
+  }
+  return xs
+}
+
+function fract(v: number) {
+  return v - Math.floor(v)
+}
+
+function hash(n: number) {
+  return fract(Math.sin(n * 127.1 + 311.7) * 43758.5453)
+}
+
+function voiceSample(t: number) {
+  const word = t * 0.78
+  const id = Math.floor(word)
+  const f = fract(word)
+  const voiced = hash(id + 0.11) > 0.2
+  const attack = Math.min(1, f * 12)
+  const release = f < 0.64 ? 1 : Math.max(0, 1 - (f - 0.64) / 0.36)
+  const strength = voiced ? 0.28 + 0.72 * hash(id + 2.4) : 0.06
+  const env = strength * attack * release
+  const hz = 6.4 + hash(id + 5) * 5.2
+  const fund = Math.sin(t * Math.PI * 2 * hz)
+  const h2 = Math.sin(t * Math.PI * 2 * hz * 2.12 + 0.35) * 0.42
+  const h3 = Math.sin(t * Math.PI * 2 * hz * 3.4 + id) * 0.18
+  const air = Math.sin(t * 23.5 + hash(id) * 8) * 0.1
+  return (fund + h2 + h3 + air) * env
+}
+
+function voiceLift(u: number, t: number) {
+  const env = voiceSample(t)
+  const height = 0.35 + 0.65 * hash(u * 93.7)
+  const standing = 0.7 + 0.3 * Math.sin(u * Math.PI * 5)
+  return env * height * standing
+}
+
+function mix(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function drawStar(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  r: number,
+  a: number,
+  glint: boolean,
+  sr: number,
+  sg: number,
+  sb: number,
+) {
+  if (a < 0.04) return
+  ctx.fillStyle = `rgba(${sr},${sg},${sb},${Math.min(0.95, a)})`
+  ctx.beginPath()
+  ctx.arc(x, y, r, 0, Math.PI * 2)
+  ctx.fill()
+  if (glint && a > 0.16) {
+    ctx.fillStyle = `rgba(255,252,248,${Math.min(0.9, a * 0.7)})`
+    ctx.beginPath()
+    ctx.arc(x, y, r * 0.4, 0, Math.PI * 2)
+    ctx.fill()
+  }
+}
 
 function makeStars(count: number): Star[] {
   const stars: Star[] = []
@@ -129,29 +266,60 @@ export function paintDynamicSky(
     ctx.restore()
   }
 
+  tickVoice()
+  const voice = getVoice()
+  const active = voice.mode !== 'idle'
+  const clock = skyTime(time, active)
+  if (active && !frozenStars) captureFreeze(clock)
+  if (!active) frozenStars = null
+  const blend = voiceBlend()
+  const amp = voiceAmp()
+
   const [sr, sg, sb] = hexRgb(mixHex('#f7f4ff', palette.sunColor, 0.18))
-  const drift = (time * 0.0028) % 1
+  const drift = (clock * 0.0028) % 1
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'
-  for (const star of STARS) {
-    const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(time * star.tw + star.ph))
-    const vis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
-    if (vis < 0.03) continue
-    const x = ((star.x + drift) % 1) * w
-    const y = star.y * h
-    const fade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
-    const a = vis * fade * (star.glint ? 1.9 : 1.05)
-    if (a < 0.04) continue
-    const r = Math.max(0.85 * unit, star.r * unit)
-    ctx.fillStyle = `rgba(${sr},${sg},${sb},${Math.min(0.95, a)})`
-    ctx.beginPath()
-    ctx.arc(x, y, r, 0, Math.PI * 2)
-    ctx.fill()
-    if (star.glint && a > 0.16) {
-      ctx.fillStyle = `rgba(255,252,248,${Math.min(0.9, a * 0.7)})`
-      ctx.beginPath()
-      ctx.arc(x, y, r * 0.4, 0, Math.PI * 2)
-      ctx.fill()
+
+  if (frozenStars && blend > 0.001) {
+    const center = h * 0.44
+    const waveH = h * 0.09
+    const lineXs = spacedLineXs(frozenStars, w, unit)
+
+    frozenStars.forEach((frozen, i) => {
+      const star = STARS[frozen.starIndex]
+      if (!star) return
+      const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
+      const liveVis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
+      const liveFade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
+      const liveA = liveVis * liveFade * (star.glint ? 1.9 : 1.05)
+      const linedA = Math.max(liveA, (0.42 + star.b * 0.5) * (star.glint ? 1.25 : 1))
+      const a = mix(liveA, linedA, blend)
+      const homeY = frozen.ny * h
+      const linedY = center + voiceLift(frozen.nx, time) * amp * waveH
+      const x = mix(frozen.nx, lineXs[i] ?? frozen.nx, blend) * w
+      drawStar(
+        ctx,
+        x,
+        mix(homeY, linedY, blend),
+        Math.max(0.85 * unit, star.r * unit),
+        a,
+        star.glint,
+        sr,
+        sg,
+        sb,
+      )
+    })
+  } else {
+    for (const star of STARS) {
+      const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
+      const vis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
+      if (vis < 0.03) continue
+      const x = ((star.x + drift) % 1) * w
+      const y = star.y * h
+      const fade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
+      const a = vis * fade * (star.glint ? 1.9 : 1.05)
+      const r = Math.max(0.85 * unit, star.r * unit)
+      drawStar(ctx, x, y, r, a, star.glint, sr, sg, sb)
     }
   }
   ctx.restore()

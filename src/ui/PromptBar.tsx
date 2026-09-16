@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { matchScenario, type ScenarioId } from '../data/scenarios'
+import { matchScenario, scenarios, type ScenarioId } from '../data/scenarios'
+import { getVoice, startVoice, stopVoice, subscribeVoice } from '../voice'
 
 type Props = {
   onSubmit: (id: ScenarioId, text: string) => void
@@ -9,59 +10,49 @@ type Props = {
 
 export function PromptBar({ onSubmit, shifted = false }: Props) {
   const [text, setText] = useState('')
-  const [listening, setListening] = useState(false)
-  const [micError, setMicError] = useState<string | null>(null)
-  const recRef = useRef<SpeechRecognition | null>(null)
+  const [voice, setVoice] = useState(getVoice)
+  const pendingTranscript = useRef(false)
+  const voicing = voice.mode !== 'idle'
+  const stopping = voice.mode === 'disbanding'
+
+  useEffect(() => subscribeVoice(setVoice), [])
 
   useEffect(() => {
-    return () => recRef.current?.abort()
-  }, [])
+    if (voice.mode !== 'idle' || !pendingTranscript.current) return
+    pendingTranscript.current = false
+    setText(scenarios[0].question)
+  }, [voice.mode])
 
   function toggleMic() {
-    const Ctor = window.SpeechRecognition ?? window.webkitSpeechRecognition
-    if (!Ctor) {
-      setMicError('Voice is not available in this browser.')
+    if (voice.mode === 'idle') {
+      pendingTranscript.current = true
+      setText('')
+      startVoice()
       return
     }
-    if (listening) {
-      recRef.current?.stop()
-      setListening(false)
-      return
-    }
-    const rec = new Ctor()
-    rec.lang = 'en-US'
-    rec.interimResults = true
-    rec.continuous = false
-    rec.onresult = (event) => {
-      const piece = Array.from(event.results)
-        .map((r) => r[0]?.transcript ?? '')
-        .join(' ')
-        .trim()
-      if (piece) setText(piece)
-    }
-    rec.onerror = (event) => {
-      setListening(false)
-      if (event.error === 'not-allowed') setMicError('Microphone blocked — type instead.')
-      else setMicError('Voice capture ended. You can type instead.')
-    }
-    rec.onend = () => setListening(false)
-    recRef.current = rec
-    setMicError(null)
-    setListening(true)
-    rec.start()
+    if (voice.mode === 'forming' || voice.mode === 'listening') stopVoice()
   }
 
   function submit() {
     const trimmed = text.trim()
-    if (!trimmed) return
-    recRef.current?.stop()
+    if (!trimmed || voicing) return
     onSubmit(matchScenario(trimmed), trimmed)
     setText('')
   }
 
+  const barClass = [
+    'prompt-bar',
+    'glass',
+    'liquid-glass',
+    shifted ? 'shifted' : '',
+    voicing ? 'is-listening' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
     <motion.div
-      className={shifted ? 'prompt-bar glass liquid-glass shifted' : 'prompt-bar glass liquid-glass'}
+      className={barClass}
       initial={{ y: 18 }}
       animate={{ y: 0 }}
       transition={{ delay: 0.35, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
@@ -72,23 +63,24 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
         onKeyDown={(e) => {
           if (e.key === 'Enter') submit()
         }}
-        placeholder="Tell me which of the two you’d like to ask about"
+        placeholder={voicing ? 'Listening…' : 'Tell me which of the two you’d like to ask about'}
         aria-label="Question"
+        readOnly={voicing}
       />
       <div className="prompt-icons">
         <button
           type="button"
-          className={listening ? 'icon-btn live' : 'icon-btn'}
+          className={voicing ? 'icon-btn live' : 'icon-btn'}
           onClick={toggleMic}
-          aria-label={listening ? 'Stop listening' : 'Ask with voice'}
+          disabled={stopping}
+          aria-label={voicing ? 'Stop listening' : 'Ask with voice'}
         >
-          <img src="/icons/mic.svg" alt="" width={32} height={32} />
+          <img src={voicing ? '/icons/stop.svg' : '/icons/mic.svg'} alt="" width={32} height={32} />
         </button>
-        <button type="button" className="icon-btn" onClick={submit} disabled={!text.trim()} aria-label="Send">
+        <button type="button" className="icon-btn" onClick={submit} disabled={voicing || !text.trim()} aria-label="Send">
           <img src="/icons/send.svg" alt="" width={32} height={32} />
         </button>
       </div>
-      {micError ? <p className="mic-note">{micError}</p> : null}
     </motion.div>
   )
 }

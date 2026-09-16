@@ -10,6 +10,7 @@ import { AgentReply } from './ui/AgentReply'
 import { AgentText } from './ui/AgentText'
 import { LiquidGlassLayer } from './ui/GlassLayer'
 import { briefingSummary, scenarioById, type ScenarioId } from './data/scenarios'
+import { getVoice, subscribeVoice } from './voice'
 
 const MobilityMap = lazy(async () => {
   const mod = await import('./map/MobilityMap')
@@ -33,8 +34,11 @@ export default function App() {
   const [replyId, setReplyId] = useState<ScenarioId | null>(null)
   const [keepDunes, setKeepDunes] = useState(true)
   const [cardsReady, setCardsReady] = useState(false)
+  const [voicing, setVoicing] = useState(() => getVoice().mode !== 'idle')
   const flyTimer = useRef(0)
   const hello = greeting()
+
+  useEffect(() => subscribeVoice((s) => setVoicing(s.mode !== 'idle')), [])
 
   useEffect(() => {
     return () => window.clearTimeout(flyTimer.current)
@@ -92,7 +96,7 @@ export default function App() {
   const layers = showMapWidget ? scenarioById(replyId).mapLayers : []
 
   return (
-    <div className={`app stage-${phase}`}>
+    <div className={`app stage-${phase}${voicing ? ' is-voicing' : ''}`}>
       <SkyBackdrop />
       {showDunes ? <DuneCanvas flying={phase === 'flying'} fading={dunesFading} /> : null}
 
@@ -117,31 +121,33 @@ export default function App() {
           </button>
         ) : null}
 
-        {phase === 'briefing' ? (
-          <motion.div
-            className="briefing"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          >
-            <h1 className="greeting">{hello}</h1>
-            <AgentText
-              className="brief-summary"
-              text={briefingSummary}
-              onComplete={() => setCardsReady(true)}
-            />
-            <AnimatePresence>
-              {cardsReady ? <ScenarioCards key="scenarios" onPick={openAnalysis} /> : null}
-            </AnimatePresence>
-          </motion.div>
-        ) : null}
+        <div className={voicing ? 'voice-dim is-off' : 'voice-dim'}>
+          {phase === 'briefing' ? (
+            <motion.div
+              className="briefing"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <h1 className="greeting">{hello}</h1>
+              <AgentText
+                className="brief-summary"
+                text={briefingSummary}
+                onComplete={() => setCardsReady(true)}
+              />
+              <AnimatePresence>
+                {cardsReady ? <ScenarioCards key="scenarios" onPick={openAnalysis} /> : null}
+              </AnimatePresence>
+            </motion.div>
+          ) : null}
 
-        {(phase === 'analysis' || phase === 'split') && replyId ? (
-          <>
-            <div className="question-chip glass liquid-glass">{scenarioById(replyId).question}</div>
-            <AgentReply key={replyId} id={replyId} onRevealed={goSplit} />
-          </>
-        ) : null}
+          {(phase === 'analysis' || phase === 'split') && replyId ? (
+            <>
+              <div className="question-chip glass liquid-glass">{scenarioById(replyId).question}</div>
+              <AgentReply key={replyId} id={replyId} onRevealed={goSplit} />
+            </>
+          ) : null}
+        </div>
 
         {phase === 'briefing' || phase === 'analysis' || phase === 'split' ? (
           <PromptBar shifted={phase === 'split'} onSubmit={onPrompt} />

@@ -146,6 +146,17 @@ function paintBackdrop(ctx: CanvasRenderingContext2D, w: number, h: number) {
   }
 }
 
+function paneVisible(el: HTMLElement) {
+  if (el.closest('.voice-dim.is-off')) return false
+  let node: HTMLElement | null = el
+  while (node && node !== document.documentElement) {
+    const style = getComputedStyle(node)
+    if (style.visibility === 'hidden' || style.display === 'none') return false
+    node = node.parentElement
+  }
+  return true
+}
+
 function readPanes(canvas: HTMLCanvasElement): Pane[] {
   const dpr = canvas.width / Math.max(canvas.clientWidth, 1)
   const nodes = document.querySelectorAll<HTMLElement>('.liquid-glass')
@@ -153,7 +164,7 @@ function readPanes(canvas: HTMLCanvasElement): Pane[] {
   nodes.forEach((el) => {
     const rect = el.getBoundingClientRect()
     if (rect.width < 2 || rect.height < 2) return
-    if (getComputedStyle(el).visibility === 'hidden') return
+    if (!paneVisible(el)) return
     const radiusPx = Number.parseFloat(getComputedStyle(el).borderTopLeftRadius) || 24
     panes.push({
       centerX: (rect.left + rect.width / 2) * dpr,
