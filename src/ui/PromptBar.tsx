@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { matchScenario, scenarios, type ScenarioId } from '../data/scenarios'
 import { getVoice, startVoice, stopVoice, subscribeVoice } from '../voice'
+import { asset } from '../asset'
 
 const TRANSCRIPT = scenarios[0].question
 const WORDS = TRANSCRIPT.split(/\s+/).filter(Boolean)
@@ -179,10 +180,10 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
           disabled={stopping}
           aria-label={voicing ? 'Stop listening' : 'Ask with voice'}
         >
-          <img src={voicing ? '/icons/stop.svg' : '/icons/mic.svg'} alt="" width={22} height={22} />
+          <img src={voicing ? asset('icons/stop.svg') : asset('icons/mic.svg')} alt="" width={22} height={22} />
         </button>
         <button type="button" className={sendClass} onClick={submit} disabled={!canSend} aria-label="Send">
-          <img src="/icons/send.svg" alt="" width={32} height={32} />
+          <img src={asset('icons/send.svg')} alt="" width={32} height={32} />
         </button>
       </div>
     </motion.div>

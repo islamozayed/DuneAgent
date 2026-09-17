@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { asset } from '../asset'
 
 /** Figma mark box is ~183×215; thinking indicator is 70% of the first 48×56 size. */
 const CSS_W = 34
@@ -450,7 +451,7 @@ export function ThinkingMark() {
       raf = requestAnimationFrame(frame)
     }
 
-    Promise.all([loadImage('/icons/dune-mark-arch.svg'), loadImage('/icons/dune-mark-dune.svg')])
+    Promise.all([loadImage(asset('icons/dune-mark-arch.svg')), loadImage(asset('icons/dune-mark-dune.svg'))])
       .then(([archImg, duneImg]) => {
         if (!alive) return
         const scale = height / VIEW_H

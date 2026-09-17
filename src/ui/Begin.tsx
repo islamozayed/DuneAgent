@@ -1,4 +1,5 @@
 import { motion } from 'motion/react'
+import { asset } from '../asset'
 
 type Props = {
   onBegin: () => void
@@ -15,7 +16,7 @@ export function Begin({ onBegin }: Props) {
     >
       <img
         className="landing-kicker"
-        src="/icons/dune-logo.png"
+        src={asset('icons/dune-logo.png')}
         alt="DUNE — Dynamic Urban Network Engine by BCG X"
         width={635}
         height={193}
@@ -27,7 +28,7 @@ export function Begin({ onBegin }: Props) {
       </h1>
       <button type="button" className="begin glass liquid-glass" onClick={onBegin}>
         Begin
-        <img src="/icons/begin-arrow.svg" alt="" width={35} height={8} />
+        <img src={asset('icons/begin-arrow.svg')} alt="" width={35} height={8} />
       </button>
     </motion.div>
   )

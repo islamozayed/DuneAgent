@@ -512,8 +512,8 @@ body {
   top: 0;
   width: 100%;
   height: 42.77%;
-  -webkit-mask-image: url('/icons/dune-mark-arch.svg');
-  mask-image: url('/icons/dune-mark-arch.svg');
+  -webkit-mask-image: var(--dune-mark-arch);
+  mask-image: var(--dune-mark-arch);
   /* Figma 2:4 chromatic metal — ice cyan is the blue, not the purple stop */
   background-image: linear-gradient(
     118deg,
@@ -529,8 +529,8 @@ body {
   top: 34%;
   width: 92.3%;
   height: 66%;
-  -webkit-mask-image: url('/icons/dune-mark-dune.svg');
-  mask-image: url('/icons/dune-mark-dune.svg');
+  -webkit-mask-image: var(--dune-mark-dune);
+  mask-image: var(--dune-mark-dune);
   background-image: linear-gradient(
     118deg,
     rgb(169, 49, 34) 8%,

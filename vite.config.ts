@@ -93,6 +93,7 @@ function threeTimerClock(): Plugin {
 }
 
 export default defineConfig({
+  base: process.env.VITE_BASE || '/',
   plugins: [threeTimerClock(), react()],
   optimizeDeps: {
     include: ['mapbox-gl', 'three', 'gsap', 'postprocessing'],

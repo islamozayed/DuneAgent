@@ -12,6 +12,7 @@ import { AgentText } from './ui/AgentText'
 import { LiquidGlassLayer } from './ui/GlassLayer'
 import { briefingSummary, scenarioById, titleForPrompt, type ScenarioId } from './data/scenarios'
 import { getVoice, subscribeVoice } from './voice'
+import { asset } from './asset'
 
 const MobilityMap = lazy(async () => {
   const mod = await import('./map/MobilityMap')
@@ -128,7 +129,7 @@ export default function App() {
         {phase === 'briefing' || phase === 'analysis' || phase === 'split' ? (
           <div className="chat-header">
             <button type="button" className="back-btn" onClick={back} aria-label="Back">
-              <img src="/icons/back.svg" alt="" width={32} height={32} />
+              <img src={asset('icons/back.svg')} alt="" width={32} height={32} />
             </button>
             {(phase === 'analysis' || phase === 'split') && chatTitle ? (
               <h1 className="chat-title">{chatTitle}</h1>
