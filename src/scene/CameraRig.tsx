@@ -65,7 +65,7 @@ export function CameraRig({ flying, fading = false }: Props) {
       }
       sampleOrbit(orbit.current, rest.current, look.current)
     },
-    { dependencies: [flying, fading] },
+    { dependencies: [flying, fading], revert: false },
   )
 
   useFrame((_, dt) => {

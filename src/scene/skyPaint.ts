@@ -1,5 +1,9 @@
 import { getPhase, samplePalette, sunDirection } from './dayNight'
+import { getSkyTravel } from './flyProgress'
 import { getVoice, tickVoice, voiceAmp, voiceBlend } from '../voice'
+
+/** Screen-space rise of the shared star field, matched to the camera fly. */
+const FLY_SKY_LIFT = 0.38
 
 type Star = {
   x: number
@@ -37,10 +41,11 @@ function skyTime(real: number, active: boolean) {
 
 function captureFreeze(clock: number) {
   const drift = (clock * 0.0028) % 1
+  const lift = getSkyTravel() * FLY_SKY_LIFT
   const rows = STARS.map((star, starIndex) => ({
     starIndex,
     nx: (star.x + drift) % 1,
-    ny: star.y,
+    ny: star.y + lift,
   }))
   rows.sort((a, b) => a.nx - b.nx || a.ny - b.ny)
   frozenStars = rows
@@ -219,8 +224,11 @@ export function paintDynamicSky(
   const glow = palette.skyGlow
   const unit = Math.max(1, w / 1920)
 
+  const lift = getSkyTravel()
+  const extra = lift * h * FLY_SKY_LIFT
+
   ctx.setTransform(1, 0, 0, 1, 0, 0)
-  const band = ctx.createLinearGradient(0, 0, 0, h)
+  const band = ctx.createLinearGradient(0, 0, 0, h + extra)
   band.addColorStop(0, zenith)
   band.addColorStop(0.12, mixHex(zenith, horizon, 0.16))
   band.addColorStop(0.3, mixHex(zenith, horizon, 0.38 + breathe * 0.04))
@@ -232,7 +240,7 @@ export function paintDynamicSky(
   ctx.fillRect(0, 0, w, h)
 
   const hx = w * (0.5 + sun[0] * 0.1)
-  const horizonBloom = ctx.createRadialGradient(hx, h * 1.08, 0, hx, h * 1.08, Math.max(w, h) * 0.78)
+  const horizonBloom = ctx.createRadialGradient(hx, h * 1.08 + extra, 0, hx, h * 1.08 + extra, Math.max(w, h) * 0.78)
   horizonBloom.addColorStop(0, rgba(glow, 0.48))
   horizonBloom.addColorStop(0.45, rgba(glow, 0.14))
   horizonBloom.addColorStop(1, rgba(glow, 0))
@@ -240,7 +248,7 @@ export function paintDynamicSky(
   ctx.fillRect(0, 0, w, h)
 
   const sunX = w * (0.5 + sun[0] * 0.34)
-  const sunY = h * (1 - (0.08 + Math.max(0, sun[1]) * 0.56))
+  const sunY = h * (1 - (0.08 + Math.max(0, sun[1]) * 0.56)) + extra
   const sunR = Math.max(w, h) * (0.2 + palette.sunIntensity * 0.07)
   const disc = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR)
   disc.addColorStop(0, rgba(palette.sunColor, Math.min(0.9, 0.22 + palette.sunIntensity * 0.2)))
@@ -255,7 +263,7 @@ export function paintDynamicSky(
     ctx.save()
     for (let i = 0; i < 2; i++) {
       const cx = w * (0.28 + i * 0.4 + Math.sin(time * 0.025 + i * 2.1) * 0.05)
-      const cy = h * (0.58 + i * 0.08 + Math.sin(time * 0.03 + i) * 0.03)
+      const cy = h * (0.58 + i * 0.08 + Math.sin(time * 0.03 + i) * 0.03) + extra
       const cw = w * 0.38
       const cloud = ctx.createRadialGradient(cx, cy, 0, cx, cy, cw)
       cloud.addColorStop(0, rgba(glow, cloudAmt))
@@ -268,7 +276,7 @@ export function paintDynamicSky(
 
   if (palette.starOpacity > 0.05) {
     ctx.save()
-    ctx.translate(w * 0.5, h * 0.2)
+    ctx.translate(w * 0.5, h * 0.2 + extra)
     ctx.rotate(-0.36)
     ctx.globalAlpha = palette.starOpacity * 0.1
     const veil = ctx.createLinearGradient(0, -h * 0.09, 0, h * 0.09)
@@ -304,7 +312,7 @@ export function paintDynamicSky(
       if (!star) return
       const twinkle = 0.88 + 0.12 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
       const liveVis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
-      const liveFade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
+      const liveFade = 1 - Math.min(1, Math.max(0, (frozen.ny - 0.68) / 0.14))
       const liveA = liveVis * liveFade * (star.glint ? 1.9 : 1.05)
       const linedA = Math.max(liveA, (0.42 + star.b * 0.5) * (star.glint ? 1.25 : 1))
       const a = mix(liveA, linedA, blend)
@@ -329,9 +337,10 @@ export function paintDynamicSky(
       const twinkle = 0.88 + 0.12 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
       const vis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
       if (vis < 0.03) continue
+      const ny = star.y + lift * FLY_SKY_LIFT
       const x = ((star.x + drift) % 1) * w
-      const y = star.y * h
-      const fade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
+      const y = ny * h
+      const fade = 1 - Math.min(1, Math.max(0, (ny - 0.68) / 0.14))
       const a = vis * fade * (star.glint ? 1.9 : 1.05)
       const r = Math.max(0.85 * unit, star.r * unit)
       drawStar(ctx, x, y, r, a, star.glint, sr, sg, sb)

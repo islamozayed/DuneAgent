@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { DuneCanvas } from './scene/DuneCanvas'
 import { SkyBackdrop } from './scene/SkyBackdrop'
 import { FLY_SECONDS } from './scene/CameraRig'
+import { playFlyRise, setFlyProgress } from './scene/flyProgress'
 import { Begin } from './ui/Begin'
 import { ScenarioCards } from './ui/KpiDeck'
 import { PromptBar } from './ui/PromptBar'
@@ -56,7 +57,13 @@ export default function App() {
     if (phase !== 'briefing') setCardsReady(false)
   }, [phase])
 
+  useEffect(() => {
+    if (phase === 'landing') setFlyProgress(0)
+    else if (phase !== 'flying') setFlyProgress(1)
+  }, [phase])
+
   function begin() {
+    playFlyRise(FLY_SECONDS)
     setKeepDunes(true)
     setPhase('flying')
     window.clearTimeout(flyTimer.current)
