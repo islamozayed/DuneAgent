@@ -1,0 +1,29 @@
+---
+description: Reuse a single IDE browser tab for this app. Never spawn extra Simple Browser instances for localhost:5173.
+alwaysApply: true
+---
+
+# Reuse one browser tab
+
+This project's Vite app is `http://localhost:5173/`. Parallel agents must share **one** Cursor Simple Browser / IDE browser tab. Do not create a private session.
+
+## Before any browser action
+
+1. Call `browser_tabs` with `action: "list"`.
+2. If a tab already exists for this app (`localhost:5173` or the current Vite URL, including paths), **select that tab and reuse it**. Do not create a new tab. Do not call `browser_navigate` in a way that opens a new instance when an existing tab is already on the app. Navigate or reload **in place** on the existing tab only when the URL is wrong.
+3. Open a new tab **only** if the list is empty **and** no IDE browser is already showing this app. An empty `browser_tabs` list is often per-agent, not global — if localhost:5173 / a glass-browser for Dune is already open (including a tab owned by another agent), reuse that instance. Do not spawn a replacement.
+4. Never open multiple tabs for the same localhost app. Never use `browser_tabs` `action: "new"` or `browser_navigate` `newTab: true` just to "have your own" session.
+
+## Locking and parallel agents
+
+- Lock the existing tab (`browser_lock` `action: "lock"`) before interactions; unlock when fully done.
+- Parallel agents **must share this one tab**. If the tab is locked by another agent, wait and reuse it; do not spawn a second instance.
+
+## Closing extras
+
+If more than one tab is open for the same app, close the duplicates and keep one. Do not close unrelated user tabs that are clearly not this app.
+
+```text
+❌ BAD: browser_tabs action=new, or browser_navigate newTab=true, or navigating after an empty list when 5173 is already open
+✅ GOOD: list → select existing 5173 tab → lock → work in place → unlock
+```

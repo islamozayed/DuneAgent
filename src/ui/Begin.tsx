@@ -13,7 +13,13 @@ export function Begin({ onBegin }: Props) {
       exit={{ opacity: 0, y: -20, filter: 'blur(12px)' }}
       transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
     >
-      <p className="landing-kicker">DUNE</p>
+      <img
+        className="landing-kicker"
+        src="/icons/dune-logo.svg"
+        alt="DUNE"
+        width={693}
+        height={215}
+      />
       <h1 className="landing-title">
         The Agentic Co-Pilot for
         <br />

@@ -14,6 +14,16 @@ const LAND_LOOK = new THREE.Vector3(0, 20.2, -50)
 const RISE = new THREE.Vector3(1.6, 118, 62)
 const RISE_LOOK = new THREE.Vector3(0, 128, -50)
 
+/** One slow circuit in front of the ridge — ~80s, always starting at LAND. */
+const ORBIT_SPEED = 0.078
+
+function sampleOrbit(angle: number, position: THREE.Vector3, target: THREE.Vector3) {
+  const swing = Math.sin(angle)
+  const depth = Math.cos(angle)
+  position.set(3.2 + swing * 34, 16.2 + Math.sin(angle * 0.65) * 1.45, 100 + depth * 18)
+  target.set(swing * 22, 20.2 + Math.sin(angle * 0.5) * 2.6, -48 + depth * 14)
+}
+
 type Props = {
   flying: boolean
   fading?: boolean
@@ -23,6 +33,7 @@ export function CameraRig({ flying, fading = false }: Props) {
   const { camera } = useThree()
   const rest = useRef(LAND.clone())
   const look = useRef(LAND_LOOK.clone())
+  const orbit = useRef(0)
   const bob = useRef(0)
 
   useGSAP(
@@ -52,15 +63,18 @@ export function CameraRig({ flying, fading = false }: Props) {
         look.current.copy(RISE_LOOK)
         return
       }
-      gsap.set(rest.current, { x: LAND.x, y: LAND.y, z: LAND.z })
-      look.current.copy(LAND_LOOK)
+      sampleOrbit(orbit.current, rest.current, look.current)
     },
     { dependencies: [flying, fading] },
   )
 
   useFrame((_, dt) => {
     bob.current += dt
-    const hover = Math.sin(bob.current * 0.7) * (flying || fading ? 0.04 : 0.38)
+    if (!flying && !fading) {
+      orbit.current += dt * ORBIT_SPEED
+      sampleOrbit(orbit.current, rest.current, look.current)
+    }
+    const hover = Math.sin(bob.current * 0.7) * (flying || fading ? 0.04 : 0.18)
     camera.position.set(rest.current.x, rest.current.y + hover, rest.current.z)
     camera.lookAt(look.current.x, look.current.y + hover, look.current.z)
   })

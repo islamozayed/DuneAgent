@@ -15,6 +15,19 @@ import {
   shuttleCorridor,
   visitorHeat,
 } from '../data/saadiyat'
+import {
+  YAS_BEARING,
+  YAS_BOUNDS,
+  YAS_CENTER,
+  YAS_PITCH,
+  YAS_ZOOM,
+  disneyHeat,
+  disneyPois,
+  highwayPressure,
+  tramLine,
+  yasOutline,
+} from '../data/yas'
+import type { MapFocus } from '../data/scenarios'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 const STYLE =
@@ -26,17 +39,20 @@ type Variant = 'bleed' | 'widget'
 type Props = {
   layers: string[]
   variant?: Variant
+  focus?: MapFocus
   onReady?: () => void
 }
 
-export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
+export function MobilityMap({ layers, variant = 'bleed', focus = 'saadiyat', onReady }: Props) {
   const host = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const layersRef = useRef(layers)
   const variantRef = useRef(variant)
+  const focusRef = useRef(focus)
   const onReadyRef = useRef(onReady)
   layersRef.current = layers
   variantRef.current = variant
+  focusRef.current = focus
   onReadyRef.current = onReady
 
   useEffect(() => {
@@ -46,14 +62,13 @@ export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
     }
     if (!host.current || mapRef.current) return
 
+    const start = focusRef.current === 'yas' ? { center: YAS_CENTER, zoom: YAS_ZOOM, pitch: YAS_PITCH, bearing: YAS_BEARING } : { center: SAADIYAT_CENTER, zoom: SAADIYAT_ZOOM, pitch: SAADIYAT_PITCH, bearing: SAADIYAT_BEARING }
+
     mapboxgl.accessToken = TOKEN
     const map = new mapboxgl.Map({
       container: host.current,
       style: STYLE,
-      center: SAADIYAT_CENTER,
-      zoom: SAADIYAT_ZOOM,
-      pitch: SAADIYAT_PITCH,
-      bearing: SAADIYAT_BEARING,
+      ...start,
       attributionControl: false,
       antialias: true,
       interactive: false,
@@ -64,9 +79,9 @@ export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
 
     const onStyleReady = () => {
       paintOverlays(map)
-      applyLayers(map, layersRef.current, variantRef.current)
+      applyLayers(map, layersRef.current, variantRef.current, focusRef.current)
       map.resize()
-      frameIsland(map, 0)
+      frameRegion(map, focusRef.current, 0)
       map.once('idle', () => onReadyRef.current?.())
     }
 
@@ -95,7 +110,7 @@ export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
     const map = mapRef.current
     if (!map) return
     map.resize()
-    frameIsland(map, 1600)
+    frameRegion(map, focus, 1600)
     const start = performance.now()
     let raf = 0
     const tick = () => {
@@ -104,18 +119,18 @@ export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [variant])
+  }, [variant, focus])
 
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
-    const apply = () => applyLayers(map, layers, variant)
+    const apply = () => applyLayers(map, layers, variant, focus)
     if (map.isStyleLoaded()) apply()
     else map.once('load', apply)
-  }, [layers, variant])
+  }, [layers, variant, focus])
 
   if (!TOKEN) {
-    return <div className="map-missing">Add a Mapbox token to load the Saadiyat map.</div>
+    return <div className="map-missing">Add a Mapbox token to load the mobility map.</div>
   }
 
   return (
@@ -125,7 +140,7 @@ export function MobilityMap({ layers, variant = 'bleed', onReady }: Props) {
   )
 }
 
-const ALL = [
+const SAADIYAT_LAYERS = [
   'visitors-heat',
   'lastmile-heat',
   'shuttle-corridor',
@@ -134,9 +149,24 @@ const ALL = [
   'pois-campus',
 ]
 
-const CONTEXT = ['island-fill', 'island-line']
+const YAS_LAYERS = ['disney-heat', 'tram-line', 'highway-pressure', 'pois-disney']
 
-function frameIsland(map: mapboxgl.Map, duration: number) {
+const CONTEXT = {
+  saadiyat: ['island-fill', 'island-line'],
+  yas: ['yas-fill', 'yas-line'],
+} as const
+
+function frameRegion(map: mapboxgl.Map, focus: MapFocus, duration: number) {
+  if (focus === 'yas') {
+    map.fitBounds(YAS_BOUNDS, {
+      padding: { top: 48, right: 36, bottom: 72, left: 36 },
+      pitch: YAS_PITCH,
+      bearing: YAS_BEARING,
+      duration,
+      maxZoom: 12.6,
+    })
+    return
+  }
   map.fitBounds(SAADIYAT_BOUNDS, {
     padding: { top: 48, right: 36, bottom: 72, left: 36 },
     pitch: SAADIYAT_PITCH,
@@ -149,6 +179,9 @@ function frameIsland(map: mapboxgl.Map, duration: number) {
 function paintOverlays(map: mapboxgl.Map) {
   if (!map.getSource('island')) {
     map.addSource('island', { type: 'geojson', data: islandOutline })
+  }
+  if (!map.getSource('yas')) {
+    map.addSource('yas', { type: 'geojson', data: yasOutline })
   }
   if (!map.getSource('shuttle')) {
     map.addSource('shuttle', { type: 'geojson', data: shuttleCorridor, lineMetrics: true })
@@ -168,6 +201,18 @@ function paintOverlays(map: mapboxgl.Map) {
   if (!map.getSource('pois-campus')) {
     map.addSource('pois-campus', { type: 'geojson', data: campusPois })
   }
+  if (!map.getSource('disney')) {
+    map.addSource('disney', { type: 'geojson', data: disneyHeat })
+  }
+  if (!map.getSource('tram')) {
+    map.addSource('tram', { type: 'geojson', data: tramLine, lineMetrics: true })
+  }
+  if (!map.getSource('highway')) {
+    map.addSource('highway', { type: 'geojson', data: highwayPressure, lineMetrics: true })
+  }
+  if (!map.getSource('pois-disney')) {
+    map.addSource('pois-disney', { type: 'geojson', data: disneyPois })
+  }
 
   addOverlay(map, {
     id: 'island-fill',
@@ -182,6 +227,25 @@ function paintOverlays(map: mapboxgl.Map) {
     id: 'island-line',
     type: 'line',
     source: 'island',
+    paint: {
+      'line-color': '#f0d2a8',
+      'line-width': 1.4,
+      'line-opacity': 0.55,
+    },
+  })
+  addOverlay(map, {
+    id: 'yas-fill',
+    type: 'fill',
+    source: 'yas',
+    paint: {
+      'fill-color': '#e4b36a',
+      'fill-opacity': 0.08,
+    },
+  })
+  addOverlay(map, {
+    id: 'yas-line',
+    type: 'line',
+    source: 'yas',
     paint: {
       'line-color': '#f0d2a8',
       'line-width': 1.4,
@@ -235,6 +299,30 @@ function paintOverlays(map: mapboxgl.Map) {
     },
   })
   addOverlay(map, {
+    id: 'disney-heat',
+    type: 'heatmap',
+    source: 'disney',
+    paint: {
+      'heatmap-weight': ['get', 'mag'],
+      'heatmap-intensity': 1.35,
+      'heatmap-radius': 46,
+      'heatmap-opacity': 0.84,
+      'heatmap-color': [
+        'interpolate',
+        ['linear'],
+        ['heatmap-density'],
+        0,
+        'rgba(228,179,106,0)',
+        0.2,
+        'rgba(138,91,98,0.42)',
+        0.55,
+        'rgba(228,179,106,0.72)',
+        0.85,
+        'rgba(255,220,170,0.95)',
+      ],
+    },
+  })
+  addOverlay(map, {
     id: 'shuttle-corridor',
     type: 'line',
     source: 'shuttle',
@@ -268,6 +356,39 @@ function paintOverlays(map: mapboxgl.Map) {
     },
   })
   addOverlay(map, {
+    id: 'tram-line',
+    type: 'line',
+    source: 'tram',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-width': 3.4,
+      'line-opacity': 0.95,
+      'line-gradient': [
+        'interpolate',
+        ['linear'],
+        ['line-progress'],
+        0,
+        '#e4b36a',
+        0.5,
+        '#f4c9a8',
+        1,
+        '#8a5b62',
+      ],
+    },
+  })
+  addOverlay(map, {
+    id: 'highway-pressure',
+    type: 'line',
+    source: 'highway',
+    layout: { 'line-cap': 'round', 'line-join': 'round' },
+    paint: {
+      'line-color': '#c47a7a',
+      'line-width': 4.2,
+      'line-opacity': 0.72,
+      'line-dasharray': [1.6, 1.1],
+    },
+  })
+  addOverlay(map, {
     id: 'pois-culture',
     type: 'circle',
     source: 'pois-culture',
@@ -289,6 +410,17 @@ function paintOverlays(map: mapboxgl.Map) {
       'circle-stroke-color': '#1a1420',
     },
   })
+  addOverlay(map, {
+    id: 'pois-disney',
+    type: 'circle',
+    source: 'pois-disney',
+    paint: {
+      'circle-radius': 5.5,
+      'circle-color': '#f4d2a8',
+      'circle-stroke-width': 1.5,
+      'circle-stroke-color': '#1a1420',
+    },
+  })
 }
 
 function addOverlay(map: mapboxgl.Map, layer: mapboxgl.LayerSpecification) {
@@ -300,11 +432,12 @@ function addOverlay(map: mapboxgl.Map, layer: mapboxgl.LayerSpecification) {
   }
 }
 
-function applyLayers(map: mapboxgl.Map, layers: string[], variant: Variant) {
-  for (const id of [...CONTEXT, ...ALL]) {
+function applyLayers(map: mapboxgl.Map, layers: string[], variant: Variant, focus: MapFocus) {
+  const all = [...CONTEXT.saadiyat, ...CONTEXT.yas, ...SAADIYAT_LAYERS, ...YAS_LAYERS]
+  const context: readonly string[] = CONTEXT[focus]
+  for (const id of all) {
     if (!map.getLayer(id)) continue
-    const wanted =
-      variant === 'widget' && (CONTEXT.includes(id) || layers.includes(id))
+    const wanted = variant === 'widget' && (context.includes(id) || layers.includes(id))
     map.setLayoutProperty(id, 'visibility', wanted ? 'visible' : 'none')
   }
 }

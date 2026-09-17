@@ -45,16 +45,20 @@ export const shuttleCorridor = {
   features: [
     {
       type: 'Feature',
-      properties: { name: 'Cultural District shuttle' },
+      properties: { name: 'Cultural District 2040 loop' },
       geometry: {
         type: 'LineString',
         coordinates: [
           [54.3983, 24.5355],
+          [54.4018, 24.5332],
           [54.405, 24.534],
+          [54.4084, 24.5318],
           [54.412, 24.532],
           [54.421, 24.541],
           [54.434, 24.545],
           [54.4347, 24.5238],
+          [54.418, 24.528],
+          [54.405, 24.534],
         ],
       },
     },
@@ -85,14 +89,15 @@ export const visitorHeat = {
   type: 'FeatureCollection',
   features: [
     { type: 'Feature', properties: { mag: 1 }, geometry: { type: 'Point', coordinates: [54.3983, 24.5355] } },
-    { type: 'Feature', properties: { mag: 0.85 }, geometry: { type: 'Point', coordinates: [54.4005, 24.534] } },
-    { type: 'Feature', properties: { mag: 0.7 }, geometry: { type: 'Point', coordinates: [54.405, 24.534] } },
-    { type: 'Feature', properties: { mag: 0.55 }, geometry: { type: 'Point', coordinates: [54.412, 24.532] } },
-    { type: 'Feature', properties: { mag: 0.8 }, geometry: { type: 'Point', coordinates: [54.421, 24.541] } },
-    { type: 'Feature', properties: { mag: 0.75 }, geometry: { type: 'Point', coordinates: [54.428, 24.544] } },
-    { type: 'Feature', properties: { mag: 0.9 }, geometry: { type: 'Point', coordinates: [54.434, 24.545] } },
+    { type: 'Feature', properties: { mag: 0.95 }, geometry: { type: 'Point', coordinates: [54.4018, 24.5332] } },
+    { type: 'Feature', properties: { mag: 0.92 }, geometry: { type: 'Point', coordinates: [54.405, 24.534] } },
+    { type: 'Feature', properties: { mag: 0.88 }, geometry: { type: 'Point', coordinates: [54.4084, 24.5318] } },
+    { type: 'Feature', properties: { mag: 0.8 }, geometry: { type: 'Point', coordinates: [54.412, 24.532] } },
+    { type: 'Feature', properties: { mag: 0.62 }, geometry: { type: 'Point', coordinates: [54.421, 24.541] } },
+    { type: 'Feature', properties: { mag: 0.58 }, geometry: { type: 'Point', coordinates: [54.428, 24.544] } },
+    { type: 'Feature', properties: { mag: 0.7 }, geometry: { type: 'Point', coordinates: [54.434, 24.545] } },
+    { type: 'Feature', properties: { mag: 0.5 }, geometry: { type: 'Point', coordinates: [54.4347, 24.5238] } },
     { type: 'Feature', properties: { mag: 0.4 }, geometry: { type: 'Point', coordinates: [54.418, 24.536] } },
-    { type: 'Feature', properties: { mag: 0.35 }, geometry: { type: 'Point', coordinates: [54.408, 24.528] } },
   ],
 }
 
@@ -118,13 +123,33 @@ export const culturePois = {
     },
     {
       type: 'Feature',
-      properties: { mag: 0.7, name: 'Cultural District' },
+      properties: { mag: 0.95, name: 'Guggenheim Abu Dhabi' },
+      geometry: { type: 'Point', coordinates: [54.4018, 24.5332] },
+    },
+    {
+      type: 'Feature',
+      properties: { mag: 0.9, name: 'Zayed National Museum' },
       geometry: { type: 'Point', coordinates: [54.405, 24.534] },
     },
     {
       type: 'Feature',
-      properties: { mag: 0.8, name: 'Saadiyat Beach hotels' },
+      properties: { mag: 0.82, name: 'Natural History Museum' },
+      geometry: { type: 'Point', coordinates: [54.4084, 24.5318] },
+    },
+    {
+      type: 'Feature',
+      properties: { mag: 0.78, name: 'teamLab Phenomena' },
+      geometry: { type: 'Point', coordinates: [54.412, 24.532] },
+    },
+    {
+      type: 'Feature',
+      properties: { mag: 0.7, name: 'Saadiyat Beach hotels' },
       geometry: { type: 'Point', coordinates: [54.434, 24.545] },
+    },
+    {
+      type: 'Feature',
+      properties: { mag: 0.65, name: 'NYU Abu Dhabi' },
+      geometry: { type: 'Point', coordinates: [54.4347, 24.5238] },
     },
   ],
 }

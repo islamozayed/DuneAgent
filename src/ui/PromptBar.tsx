@@ -113,6 +113,7 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
   }
 
   const busy = voicing || streaming
+  const canSend = Boolean(text.trim()) && !busy
   const barClass = [
     'prompt-bar',
     'glass',
@@ -122,6 +123,9 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
     streaming ? 'is-transcribing' : '',
     expanded ? 'is-expanded' : '',
   ]
+    .filter(Boolean)
+    .join(' ')
+  const sendClass = ['send-btn', canSend ? 'is-active' : 'is-idle', busy ? 'is-busy' : '']
     .filter(Boolean)
     .join(' ')
 
@@ -175,9 +179,9 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
           disabled={stopping}
           aria-label={voicing ? 'Stop listening' : 'Ask with voice'}
         >
-          <img src={voicing ? '/icons/stop.svg' : '/icons/mic.svg'} alt="" width={32} height={32} />
+          <img src={voicing ? '/icons/stop.svg' : '/icons/mic.svg'} alt="" width={22} height={22} />
         </button>
-        <button type="button" className="icon-btn" onClick={submit} disabled={busy || !text.trim()} aria-label="Send">
+        <button type="button" className={sendClass} onClick={submit} disabled={!canSend} aria-label="Send">
           <img src="/icons/send.svg" alt="" width={32} height={32} />
         </button>
       </div>

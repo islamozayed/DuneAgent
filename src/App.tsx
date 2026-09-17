@@ -9,7 +9,7 @@ import { PromptBar } from './ui/PromptBar'
 import { AgentReply } from './ui/AgentReply'
 import { AgentText } from './ui/AgentText'
 import { LiquidGlassLayer } from './ui/GlassLayer'
-import { briefingSummary, scenarioById, type ScenarioId } from './data/scenarios'
+import { briefingSummary, scenarioById, titleForPrompt, type ScenarioId } from './data/scenarios'
 import { getVoice, subscribeVoice } from './voice'
 
 const MobilityMap = lazy(async () => {
@@ -32,6 +32,7 @@ function greeting(): string {
 export default function App() {
   const [phase, setPhase] = useState<Phase>('landing')
   const [replyId, setReplyId] = useState<ScenarioId | null>(null)
+  const [chatTitle, setChatTitle] = useState<string | null>(null)
   const [keepDunes, setKeepDunes] = useState(true)
   const [cardsReady, setCardsReady] = useState(false)
   const [voicing, setVoicing] = useState(() => getVoice().mode !== 'idle')
@@ -66,6 +67,7 @@ export default function App() {
     if (phase === 'split') setPhase('analysis')
     else if (phase === 'analysis') {
       setReplyId(null)
+      setChatTitle(null)
       setPhase('briefing')
     } else if (phase === 'briefing') {
       window.clearTimeout(flyTimer.current)
@@ -74,8 +76,9 @@ export default function App() {
     }
   }
 
-  const openAnalysis = useCallback((id: ScenarioId) => {
+  const openAnalysis = useCallback((id: ScenarioId, text?: string) => {
     setReplyId(id)
+    setChatTitle(titleForPrompt(id, text))
     setPhase('analysis')
   }, [])
 
@@ -84,8 +87,8 @@ export default function App() {
   }, [])
 
   const onPrompt = useCallback(
-    (id: ScenarioId, _text: string) => {
-      openAnalysis(id)
+    (id: ScenarioId, text: string) => {
+      openAnalysis(id, text)
     },
     [openAnalysis],
   )
@@ -103,7 +106,7 @@ export default function App() {
       {showMapWidget ? (
         <div className="map-host">
           <Suspense fallback={null}>
-            <MobilityMap layers={layers} variant="widget" />
+            <MobilityMap layers={layers} variant="widget" focus={scenarioById(replyId).mapFocus} />
           </Suspense>
         </div>
       ) : null}
@@ -116,9 +119,20 @@ export default function App() {
         </AnimatePresence>
 
         {phase === 'briefing' || phase === 'analysis' || phase === 'split' ? (
-          <button type="button" className="back-btn" onClick={back} aria-label="Back">
-            <img src="/icons/back.svg" alt="" width={32} height={32} />
-          </button>
+          <div className="chat-header">
+            <button type="button" className="back-btn" onClick={back} aria-label="Back">
+              <img src="/icons/back.svg" alt="" width={32} height={32} />
+            </button>
+            {(phase === 'analysis' || phase === 'split') && chatTitle ? (
+              <h1 className="chat-title">{chatTitle}</h1>
+            ) : null}
+          </div>
+        ) : null}
+
+        {showMapWidget ? (
+          <div className="map-chrome">
+            <div className="map-title">{scenarioById(replyId).mapTitle}</div>
+          </div>
         ) : null}
 
         <div className={voicing ? 'voice-dim is-off' : 'voice-dim'}>
@@ -142,10 +156,10 @@ export default function App() {
           ) : null}
 
           {(phase === 'analysis' || phase === 'split') && replyId ? (
-            <>
+            <div className="analysis-stack">
               <div className="question-chip glass liquid-glass">{scenarioById(replyId).question}</div>
               <AgentReply key={replyId} id={replyId} onRevealed={goSplit} />
-            </>
+            </div>
           ) : null}
         </div>
 

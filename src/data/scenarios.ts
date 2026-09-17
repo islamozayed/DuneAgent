@@ -1,7 +1,8 @@
-export type ScenarioId = 'visitors' | 'lastmile'
+export type ScenarioId = 'saadiyat' | 'disney'
+export type MapFocus = 'saadiyat' | 'yas'
 
 export const briefingSummary =
-  'Private cars still carry most visitor trips onto Saadiyat, with shuttle share spiking only on Louvre–hotel peaks. Beach–NYUAD hops stay short and taxi-shaped; cycling remains a thin slice of island movement.'
+  'By 2040, Abu Dhabi moves as a stacked network: Etihad Rail to the federation, a 100 km/h tram from Zayed International into Yas, and last-mile loops across Saadiyat’s cultural district. Tourism Strategy 2030 already points to 39 million visitors; the decade after absorbs that demand on rails, water, and shared fleets — not new lanes on Sheikh Zayed Road.'
 
 export type Scenario = {
   id: ScenarioId
@@ -12,65 +13,84 @@ export type Scenario = {
   reply: string
   analysis: string[]
   mapLayers: string[]
+  mapFocus: MapFocus
+  mapTitle: string
 }
 
 export const scenarios: Scenario[] = [
   {
-    id: 'visitors',
+    id: 'saadiyat',
     kicker: 'Scenario 01',
-    title: 'Cultural District, 2024',
+    title: 'Saadiyat Island future outlook',
     kpi: [
-      'Private cars still carry most visitor trips onto Saadiyat.',
-      'Shuttle share spikes only on Louvre–hotel peak windows.',
+      'Saadiyat’s cultural district is a complete museum spine, not a single-attractor hop.',
+      'Last-mile shuttles, water, and a coastal cycle spine carry the island — private cars no longer default.',
     ],
-    question:
-      'How do peak visitor flows move between Louvre Abu Dhabi and the beach hotels?',
+    question: 'What does mobility on Saadiyat Island look like in 2040?',
     reply:
-      'Peak visitor movement on Saadiyat in 2024 is a two-pulse corridor. Morning arrivals concentrate at Louvre Abu Dhabi from the mainland bridges, then after midday the same vehicles and taxis reverse toward the beach hotels. Shuttle demand is real but thin except Friday to Sunday, when hotel guests bunch into the 10–13 and 16–19 windows. The map shows that intensity as a heat ribbon pinned to the Cultural District head of the island, with the hotel shore lighting up later in the day.',
+      'By 2040 Saadiyat is a completed cultural island, not a Louvre-and-hotel hop. Guggenheim Abu Dhabi (from December 2026), Zayed National Museum, the Natural History Museum, teamLab Phenomena, and Dar al Funoon sit with Louvre on one walkable spine. The 2024 pattern — private cars onto the island, taxis for the last kilometre — does not survive that density. A timed Cultural District shuttle, a coastal cycle and e-mobility spine, and a water taxi to downtown absorb the peak, while the map’s heat settles along the museum head of the island instead of the hotel driveway.',
     analysis: [
-      'Louvre remains the strongest single attractor; hotel dwell is longer but more diffuse along the north shore.',
-      'Taxi and private car still absorb the Louvre–beach hop because the shuttle loop is infrequent off-peak.',
-      'A timed Cultural District shuttle, stacked on Friday peaks, would cut the hottest heatmap cells without new road capacity.',
+      'Five anchors on one shore means a high-frequency shuttle loop, not more parking at each gate.',
+      'Most on-island hops stay under 4 km — cycling, e-shuttle, and ferry territory once the coastal spine is continuous.',
+      'Tie the loop to downtown and Zayed International so visitors never need a private car the moment they leave the museum steps.',
     ],
-    mapLayers: ['visitors-heat', 'shuttle-corridor', 'pois-culture'],
+    mapLayers: ['visitors-heat', 'shuttle-corridor', 'cycle-spine', 'pois-culture'],
+    mapFocus: 'saadiyat',
+    mapTitle: 'Saadiyat Island, 2040 — Cultural District heat, shuttle loop, and coastal spine',
   },
   {
-    id: 'lastmile',
+    id: 'disney',
     kicker: 'Scenario 02',
-    title: 'NYUAD–beach last-mile, 2024',
+    title: 'Disneyland construction mobility outlook',
     kpi: [
-      'Beach–NYUAD trips are short, frequent, and taxi-shaped.',
-      'Cycling and micro-mobility remain a thin share of island hops.',
+      'Yas already drew 38 million visits in 2024 before a Disney-scale gate opens.',
+      'Tram Line 4 must open ahead of the park, or construction and guests will share one highway.',
     ],
-    question:
-      'What does a lower-carbon last-mile network look like on the NYUAD–beach corridor?',
+    question: 'How will the construction of Disneyland Abu Dhabi affect mobility and transportation?',
     reply:
-      'The NYUAD to beach hop is already last-mile in length — under ten minutes by car — which is why taxis win and why a low-carbon network can win too. In 2024 the corridor is a missing bike spine: campus, coastal promenade, and hotel driveways almost touch, but they do not read as one route. Prioritising a protected cycle and e-shuttle loop on that shore would capture the short trips that never needed a private car, and would bleed pressure off the Cultural District taxi queue at peak.',
+      'Disneyland Abu Dhabi lands on Yas’s waterfront in the early 2030s, on an island that already saw 38 million visits in 2024. Construction — typically four to six years after design — will overlap the build of Tram Line 4, the 100 km/h light rail from Zayed International through Yas, Al Raha, and the airport corridor, rated at about 6,630 passengers an hour. The risk is a double peak: haulage and workforce on the same E10/airport roads that already feed Ferrari World, Warner Bros., SeaWorld, and F1. The map shows that pressure as a heat band on Yas North and the airport approach. The move is to open the tram before the park, keep construction freight on a night haul route, and hold guest traffic on rail rather than on Sheikh Zayed Road.',
     analysis: [
-      'Most NYUAD–beach trips are sub-4 km; that is cycling and on-demand shuttle territory, not highway territory.',
-      'A continuous coastal spine plus campus gates would let students and hotel staff skip the taxi default.',
-      'Pairing the spine with an EV shuttle headway under 8 minutes is the 2024-shaped move: small fleet, high frequency, visible on the island.',
+      'Yas North construction and today’s parks cannot share one unseparated highway peak — dedicated haul gates and night freight are the construction-phase rule.',
+      'Tram Line 4 (works from 2026, service targeted 2030) has to be live before Disney gates, or opening-year demand lands on cars.',
+      'Park-and-ride at Al Raha and the airport, plus a 20-minute air-rail hop from Terminal A, keep the island’s existing 38 million visits from colliding with a seventh global Disney resort.',
     ],
-    mapLayers: ['lastmile-heat', 'cycle-spine', 'shuttle-corridor', 'pois-campus'],
+    mapLayers: ['disney-heat', 'tram-line', 'highway-pressure', 'pois-disney'],
+    mapFocus: 'yas',
+    mapTitle: 'Yas Island — Disneyland construction pressure and Tram Line 4',
   },
 ]
 
 export function matchScenario(text: string): ScenarioId {
   const t = text.toLowerCase()
   if (
-    t.includes('cycle') ||
-    t.includes('last-mile') ||
-    t.includes('last mile') ||
-    t.includes('nyu') ||
-    t.includes('carbon') ||
-    t.includes('campus') ||
-    t.includes('micro')
+    t.includes('disney') ||
+    t.includes('disneyland') ||
+    t.includes('yas') ||
+    t.includes('construction') ||
+    t.includes('theme park') ||
+    t.includes('tram') ||
+    t.includes('airport')
   ) {
-    return 'lastmile'
+    return 'disney'
   }
-  return 'visitors'
+  return 'saadiyat'
 }
 
 export function scenarioById(id: ScenarioId): Scenario {
   return scenarios.find((s) => s.id === id) ?? scenarios[0]
+}
+
+/** Scenario title, or a short line derived from a freeform question. */
+export function titleForPrompt(id: ScenarioId, text?: string): string {
+  const scenario = scenarioById(id)
+  if (!text) return scenario.title
+  const trimmed = text.trim()
+  const known = scenarios.find((s) => s.question.toLowerCase() === trimmed.toLowerCase())
+  if (known) return known.title
+  const cleaned = trimmed.replace(/[?!.,]+$/g, '').trim()
+  if (!cleaned) return scenario.title
+  if (cleaned.length <= 42) return cleaned
+  const cut = cleaned.slice(0, 42)
+  const at = cut.lastIndexOf(' ')
+  return `${at > 18 ? cut.slice(0, at) : cut}…`
 }
