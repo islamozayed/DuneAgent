@@ -26,7 +26,7 @@ export function DuneCanvas({ flying, fading = false }: Props) {
       dpr={[1, 1.25]}
       gl={{ antialias: true, alpha: false, preserveDrawingBuffer: true, powerPreference: 'high-performance' }}
       onCreated={({ gl }) => {
-        gl.setClearColor('#6e6a7c', 1)
+        gl.setClearColor('#2e2c58', 1)
         gl.toneMappingExposure = 1
       }}
     >

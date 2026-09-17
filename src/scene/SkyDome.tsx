@@ -34,22 +34,39 @@ const fragment = /* glsl */ `
     float elev = clamp(dir.y * 0.5 + 0.5, 0.0, 1.0);
     vec3 col = mix(uHorizon, uZenith, pow(elev, 0.82));
 
-    float hg = exp(-pow(dir.y * 3.6, 2.0));
-    col += uGlow * hg * 0.42;
+    float hg = exp(-pow(dir.y * 3.2, 2.0));
+    col += uGlow * hg * 0.55;
 
     vec3 sunDir = normalize(uSunDir);
-    float sun = pow(max(0.0, dot(dir, sunDir)), 900.0) * uSunIntensity;
-    float halo = pow(max(0.0, dot(dir, sunDir)), 8.0) * uSunIntensity;
-    col += uSunColor * (sun * 2.8 + halo * 0.28);
+    float sun = pow(max(0.0, dot(dir, sunDir)), 700.0) * uSunIntensity;
+    float halo = pow(max(0.0, dot(dir, sunDir)), 5.5) * uSunIntensity;
+    col += uSunColor * (sun * 2.4 + halo * 0.42);
 
-    float n = hash(normalize(dir) * 220.0);
-    float nFine = hash(normalize(dir) * 560.0);
-    float sky = smoothstep(0.02, 0.42, dir.y);
-    float star = step(0.9928, n) * uStars * sky;
-    star *= 0.48 + 0.52 * sin(uTime * (1.15 + n * 2.3) + n * 48.0);
-    float star2 = step(0.9974, nFine) * uStars * sky;
-    star2 *= 0.35 + 0.65 * sin(uTime * 2.05 + nFine * 31.0);
-    col += vec3(star * 0.95 + star2);
+    // Spherical cells stay fixed on the sky. Hashing a continuous direction
+    // made 1px sparkles crawl with the camera and pulse as grain once uStars
+    // hits 1 at night.
+    float sky = smoothstep(0.08, 0.28, dir.y);
+    float az = atan(dir.z, dir.x);
+    float el = asin(clamp(dir.y, -1.0, 1.0));
+    vec2 sph = vec2(az * 0.15915494 + 0.5, el * 0.31830989 + 0.5);
+
+    vec2 gid = floor(sph * vec2(110.0, 56.0));
+    float n = hash(vec3(gid, 13.0));
+    vec2 fu = fract(sph * vec2(110.0, 56.0)) - 0.5;
+    vec2 jitter = vec2(hash(vec3(gid, 3.1)), hash(vec3(gid, 8.7))) - 0.5;
+    float disc = smoothstep(0.07, 0.0, length(fu - jitter * 0.4));
+    float twinkle = 0.9 + 0.1 * sin(uTime * (0.38 + n * 0.5) + n * 37.0);
+    float star = disc * step(0.93, n) * sky * uStars * (0.42 + n * 0.58) * twinkle;
+
+    vec2 gidB = floor(sph * vec2(48.0, 24.0));
+    float nB = hash(vec3(gidB, 19.1));
+    vec2 fuB = fract(sph * vec2(48.0, 24.0)) - 0.5;
+    vec2 jitterB = vec2(hash(vec3(gidB, 2.2)), hash(vec3(gidB, 6.8))) - 0.5;
+    float discB = smoothstep(0.1, 0.0, length(fuB - jitterB * 0.34));
+    float twinkleB = 0.92 + 0.08 * sin(uTime * (0.26 + nB * 0.35) + nB * 21.0);
+    float starB = discB * step(0.97, nB) * sky * uStars * (0.55 + nB * 0.45) * twinkleB;
+
+    col += vec3(0.9, 0.93, 1.0) * (star * 0.72 + starB * 1.02);
 
     float cloud = smoothstep(0.35, 0.7, hash(vec3(dir.x * 2.2, dir.y * 6.0, 0.2))) * (1.0 - uStars);
     cloud *= exp(-pow(dir.y * 5.0 - 0.4, 2.0)) * 0.18;
@@ -62,11 +79,11 @@ const fragment = /* glsl */ `
 export function SkyDome() {
   const mat = useRef<THREE.ShaderMaterial>(null)
   const uniforms = useRef({
-    uZenith: { value: new THREE.Color('#6ba3c9') },
-    uHorizon: { value: new THREE.Color('#e8c4a0') },
-    uGlow: { value: new THREE.Color('#f0c9a8') },
+    uZenith: { value: new THREE.Color('#2e2c58') },
+    uHorizon: { value: new THREE.Color('#b8a4d4') },
+    uGlow: { value: new THREE.Color('#dcc4e8') },
     uSunDir: { value: new THREE.Vector3(-0.6, 0.4, 0.4) },
-    uSunColor: { value: new THREE.Color('#ffe4b3') },
+    uSunColor: { value: new THREE.Color('#f0d4f4') },
     uSunIntensity: { value: 3 },
     uStars: { value: 0 },
     uTime: { value: 0 },

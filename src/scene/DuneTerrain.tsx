@@ -72,9 +72,9 @@ function getFresnelLight(): THREE.CanvasTexture {
       const warm = (rim * (0.32 + 0.95 * sunPeak) + hot * 0.85 * sunPeak + rim * sunFill * 0.36) * grain * ripple
       const cool = wrap * (0.62 + grain * 0.18)
       const i = (y * size + x) * 4
-      img.data[i] = Math.min(255, Math.floor((warm * 1.08 + cool * 0.55) * 255))
-      img.data[i + 1] = Math.min(255, Math.floor((warm * 0.88 + cool * 0.6) * 255))
-      img.data[i + 2] = Math.min(255, Math.floor((warm * 0.66 + cool * 0.78) * 255))
+      img.data[i] = Math.min(255, Math.floor((warm * 0.9 + cool * 0.64) * 255))
+      img.data[i + 1] = Math.min(255, Math.floor((warm * 0.76 + cool * 0.7) * 255))
+      img.data[i + 2] = Math.min(255, Math.floor((warm * 1.08 + cool * 0.98) * 255))
       img.data[i + 3] = 255
     }
   }
@@ -91,7 +91,7 @@ function getFresnelLight(): THREE.CanvasTexture {
   return tex
 }
 
-const FRESNEL_CACHE_KEY = 'dune-fresnel-rim-v4'
+const FRESNEL_CACHE_KEY = 'dune-fresnel-rim-v5'
 
 function injectFresnelRim(shader: THREE.WebGLProgramParametersWithUniforms, uniforms: RimUniforms) {
   shader.uniforms.uFresnelTex = uniforms.uFresnelTex
@@ -185,8 +185,8 @@ export function DuneTerrain() {
   const rimUniforms = useRef<RimUniforms>({
     uFresnelTex: { value: fresnelMap },
     uSunDir: { value: new THREE.Vector3(-0.6, 0.4, 0.4) },
-    uSunColor: { value: new THREE.Color('#f0e4e0') },
-    uRimCool: { value: new THREE.Color('#c4b0b4') },
+    uSunColor: { value: new THREE.Color('#f0d4f4') },
+    uRimCool: { value: new THREE.Color('#dcc4e8') },
     uRimStrength: { value: 1.7 },
   })
 

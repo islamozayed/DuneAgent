@@ -15,10 +15,10 @@ export function Begin({ onBegin }: Props) {
     >
       <img
         className="landing-kicker"
-        src="/icons/dune-logo.svg"
-        alt="DUNE"
-        width={693}
-        height={215}
+        src="/icons/dune-logo.png"
+        alt="DUNE — Dynamic Urban Network Engine by BCG X"
+        width={635}
+        height={193}
       />
       <h1 className="landing-title">
         The Agentic Co-Pilot for

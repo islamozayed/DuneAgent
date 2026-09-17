@@ -1,7 +1,7 @@
-import { GOLDEN, STOPS, type Palette } from '../data/palettes'
+import { DUSK, STOPS, type Palette } from '../data/palettes'
 
 export const CYCLE_SECONDS = 90
-export const INITIAL_PHASE = 0
+export const INITIAL_PHASE = 0.66
 
 export function resetCycle() {
   // Kept so the app can re-anchor the loop on mount; phase is derived from
@@ -71,4 +71,4 @@ export function sunDirection(palette: Palette): [number, number, number] {
   ]
 }
 
-export { GOLDEN }
+export { DUSK }

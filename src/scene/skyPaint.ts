@@ -272,9 +272,9 @@ export function paintDynamicSky(
     ctx.rotate(-0.36)
     ctx.globalAlpha = palette.starOpacity * 0.1
     const veil = ctx.createLinearGradient(0, -h * 0.09, 0, h * 0.09)
-    veil.addColorStop(0, 'rgba(186, 198, 230, 0)')
-    veil.addColorStop(0.5, 'rgba(220, 228, 255, 0.5)')
-    veil.addColorStop(1, 'rgba(186, 198, 230, 0)')
+    veil.addColorStop(0, 'rgba(176, 168, 230, 0)')
+    veil.addColorStop(0.5, 'rgba(216, 196, 255, 0.48)')
+    veil.addColorStop(1, 'rgba(176, 168, 230, 0)')
     ctx.fillStyle = veil
     ctx.fillRect(-w, -h * 0.09, w * 2, h * 0.18)
     ctx.restore()
@@ -289,7 +289,7 @@ export function paintDynamicSky(
   const blend = voiceBlend()
   const amp = voiceAmp()
 
-  const [sr, sg, sb] = hexRgb(mixHex('#f7f4ff', palette.sunColor, 0.18))
+  const [sr, sg, sb] = hexRgb(mixHex('#efe8ff', palette.sunColor, 0.22))
   const drift = (clock * 0.0028) % 1
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'
@@ -302,7 +302,7 @@ export function paintDynamicSky(
     frozenStars.forEach((frozen, i) => {
       const star = STARS[frozen.starIndex]
       if (!star) return
-      const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
+      const twinkle = 0.88 + 0.12 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
       const liveVis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
       const liveFade = 1 - Math.min(1, Math.max(0, (star.y - 0.68) / 0.14))
       const liveA = liveVis * liveFade * (star.glint ? 1.9 : 1.05)
@@ -326,7 +326,7 @@ export function paintDynamicSky(
     })
   } else {
     for (const star of STARS) {
-      const twinkle = 0.45 + 0.55 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
+      const twinkle = 0.88 + 0.12 * (0.5 + 0.5 * Math.sin(clock * star.tw + star.ph))
       const vis = Math.max(palette.starOpacity, star.glint ? 0.2 : 0) * star.b * twinkle
       if (vis < 0.03) continue
       const x = ((star.x + drift) % 1) * w
