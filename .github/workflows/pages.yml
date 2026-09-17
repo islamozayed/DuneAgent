@@ -27,6 +27,8 @@ jobs:
       - run: npx vite build
         env:
           VITE_BASE: /DuneAgent/
+          VITE_MAPBOX_TOKEN: ${{ vars.VITE_MAPBOX_TOKEN }}
+          VITE_MAPBOX_STYLE: ${{ vars.VITE_MAPBOX_STYLE }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
