@@ -168,6 +168,18 @@ function drawStar(
   }
 }
 
+function makeStar(rand: () => number, x: number, y: number, glint: boolean): Star {
+  return {
+    x,
+    y,
+    r: glint ? 1.2 + rand() * 1.5 : 0.6 + rand() ** 2 * 1.0,
+    b: glint ? 0.78 + rand() * 0.22 : 0.38 + rand() * 0.5,
+    tw: 0.5 + rand() * 2.2,
+    ph: rand() * Math.PI * 2,
+    glint,
+  }
+}
+
 function makeStars(count: number): Star[] {
   const stars: Star[] = []
   let seed = 17
@@ -178,15 +190,14 @@ function makeStars(count: number): Star[] {
   for (let i = 0; i < count; i++) {
     const glint = i < 16 || rand() > 0.92
     const y = rand() < 0.58 ? rand() ** 1.25 * 0.38 : 0.16 + rand() * 0.5
-    stars.push({
-      x: rand(),
-      y,
-      r: glint ? 1.2 + rand() * 1.5 : 0.6 + rand() ** 2 * 1.0,
-      b: glint ? 0.78 + rand() * 0.22 : 0.38 + rand() * 0.5,
-      tw: 0.5 + rand() * 2.2,
-      ph: rand() * Math.PI * 2,
-      glint,
-    })
+    stars.push(makeStar(rand, rand(), y, glint))
+  }
+  // Seed a band above the fold so a downward fly drift reveals more sky
+  // instead of an empty strip that then snaps back to the viewport top.
+  const overflow = FLY_SKY_LIFT + 0.12
+  const extra = Math.round(count * 0.58 * (overflow / 0.38))
+  for (let i = 0; i < extra; i++) {
+    stars.push(makeStar(rand, rand(), -rand() * overflow, i < 8 || rand() > 0.92))
   }
   return stars
 }
@@ -340,6 +351,7 @@ export function paintDynamicSky(
       const ny = star.y + lift * FLY_SKY_LIFT
       const x = ((star.x + drift) % 1) * w
       const y = ny * h
+      if (y < -8 * unit) continue
       const fade = 1 - Math.min(1, Math.max(0, (ny - 0.68) / 0.14))
       const a = vis * fade * (star.glint ? 1.9 : 1.05)
       const r = Math.max(0.85 * unit, star.r * unit)

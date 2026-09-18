@@ -3,22 +3,17 @@ import gsap from 'gsap'
 /** Shared 0–1 rise used by the camera fly and the 2D star field. */
 const fly = { p: 0 }
 
-/** Visual travel finishes before the dune canvas fade, so briefing is already on-screen. */
-const SETTLE_AT = 0.48
-
 export function getFlyProgress() {
   return fly.p
 }
 
 /**
- * Star-field travel along the fly. 0 at rest and 0 at the end — the briefing
- * layout — with a temporary downward drift in the middle. A 0↔1 snap at
- * handoff therefore does not move the stars.
+ * Star-field travel along the fly. 0 at rest, 1 once the camera has risen.
+ * Extra stars live above the viewport so the field can drift down with the
+ * camera and stay there — no snap back to the top edge.
  */
 export function getSkyTravel() {
-  const p = fly.p
-  if (p <= 0 || p >= SETTLE_AT) return 0
-  return Math.sin((p / SETTLE_AT) * Math.PI)
+  return fly.p
 }
 
 export function playFlyRise(seconds: number) {
