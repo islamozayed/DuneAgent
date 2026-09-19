@@ -15,10 +15,10 @@ These are hard rules. Violating any of them is a regression, not an improvement.
 1. **Do not change the typeface stack.** Only **Old Standard TT** (serif display/titles) and **Schibsted Grotesk** (sans body/UI). Never Inter, never system-ui as the designed face, never a third family for “readability.”
 2. **Do not flatten type or spacing to generic 16px / 1.5 / 24px cards.** Every size and gap lives in `src/index.css` tokens (`--type-*`, `--space-*`, `--chrome-*`, `--split-*`, `--content-width`). Edit tokens, not one-off pixels on components — and do not collapse showcase clamps into desktop values.
 3. **Default UI mode is Showcase** (`html[data-ui-mode="showcase"]`). Desktop is a compact variant toggled via **⌘K / Ctrl+K**, persisted as `localStorage['dune-ui-mode']`. Do not delete either mode. Do not make desktop the default.
-4. **Liquid glass is the material.** Elements marked `.liquid-glass` are refracted panes (Kawase frost + SDF lens in `GlassLayer.tsx`). Do **not** replace them with `box-shadow: 0 8px 32px`, four-corner drop shadows, `filter: blur` on the card itself, or a flat `rgba` panel. The only allowed CSS shadow on glass is the **tucked bottom contact** already in `.has-liquid-glass .liquid-glass`.
-5. **Landing is a centered cinematic stack:** DUNE logo → two-line serif title → Executive / Full System cards with Phosphor `ArrowRight`. Do not turn this into a marketing nav, a left-aligned hero, or a single CTA.
-6. **Topic cards are Figma, not Bootstrap.** Padding `--space-card` (8px showcase / 12px desktop), **4:3** heroes (`--hero-aspect`), title overlaid on the photo, blurb then questions, 2-line blurb min-height, hover arrow + dim siblings, **20% white / `plus-lighter`** question rules. Hierarchy is **title > blurb > questions**. Do not invert it.
-7. **Greeting is always “Your Excellency”** — `Good Morning|Afternoon|Evening, Your Excellency`. Do not substitute a first name, “Welcome,” or a generic hello.
+4. **Liquid glass is the material.** Elements marked `.liquid-glass` are refracted panes (Kawase frost + SDF lens in `GlassLayer.tsx`) plus a **subtle CSS rim**: 1px `--glass-stroke` (`rgba(255, 255, 255, 0.22)`) and `inset 0 1px 0 rgba(255, 255, 255, 0.28)` catch light. Do **not** replace them with `box-shadow: 0 8px 32px`, four-corner drop shadows, `filter: blur` on the card itself, or a flat `rgba` panel. Allowed CSS shadows on glass: that **inset highlight** and the **tucked bottom contact** (`0 12px 16px -14px`). Nothing else.
+5. **Landing is a centered cinematic stack:** DUNE logo → two-line serif title → **Executive / Full System** cards with Phosphor `ArrowRight`. Do not relabel them Agent / Technical. Do not turn this into a marketing nav, a left-aligned hero, or a single CTA.
+6. **Topic cards are Figma, not Bootstrap.** **Four** equal columns (Mass Transit, Roads, Toll Road & Pricing, **Land Use**). Padding `--space-card` (8px showcase / 12px desktop), **4:3** heroes (`--hero-aspect`), title overlaid on the photo, body `justify-content: space-between` so questions pin to the bottom, card `min-height: 590px` (≈570 + 20px gap between blurb and questions), 2-line blurb min-height, hover arrow + dim siblings, **20% white / `plus-lighter`** question rules. Type: title **40px showcase / 30px desktop**, blurb **24 / 18**, questions **16 / 14** (`--type-ui`). Hierarchy is **title > blurb > questions**. Do not invert it. Do not drop back to three cards.
+7. **Greeting is always “Your Excellency”** — `Good Morning|Afternoon|Evening, Your Excellency`. Do not substitute a first name, “Welcome,” or a generic hello. **`briefingSummary` is two generic sentences** (stacked network / not new lanes). No visitor counts, ridership stats, or 2030/2040 figures in that line.
 8. **Agent copy streams on the fast cadence in `agentCadence.ts`.** Do not swap `AgentText` / `AgentReply` word-blur for instant text, a typewriter at 40ms, or a markdown renderer.
 9. **The map is a viewport split, not a rounded card.** Showcase **40vw content / 60vw map**. Desktop **33vw / 66vw**. `border-radius: 0`, `box-shadow: none`. It is **not** an inset widget with 16px radius.
 10. **Back from a reply returns to briefing** (clears the thread). It does **not** collapse the map. Map show/hide is the `SidebarSimple` panel toggle, and that button exists **only after the chat title + map are revealed**.
@@ -37,7 +37,7 @@ If a design-system instinct conflicts with a token or a class in this repo, **th
 | Surface | Reality | Evidence |
 | --- | --- | --- |
 | **Voice input** | Mock. Mic starts a constellation animation, then plays a **canned transcript** — the first Mass Transit question — word-by-word. No `getUserMedia`, no Web Speech API, no hardware STT. | `PromptBar.tsx`: `TRANSCRIPT = scenarios[0].questions[0]`. `voice.ts` is a `forming → listening → disbanding` timer. `vite-env.d.ts` declares `SpeechRecognition` types that **nothing calls**. |
-| **Agent replies** | Canned copy. `matchScenario()` is keyword routing (`toll` / `disney` / `road` → id), then `scenarios[id].reply` + `.analysis`. Not an LLM, not streamed from a server. | `src/data/scenarios.ts` |
+| **Agent replies** | Canned copy. `matchScenario()` is keyword routing (`land use` / `zoning` / `density` → `landuse`; `toll` / `disney` / `road` → id), then `scenarios[id].reply` + `.analysis`. Not an LLM, not streamed from a server. | `src/data/scenarios.ts` |
 | **Thinking copy** | Four rotating phrases on a 1.6s interval (`Reading the corridor…`, etc.). Cosmetic. | `AgentReply.tsx` `THINK_PHRASES` |
 | **Takeaway icons** | First-match regex on the bullet string (`tram` → Train, `toll` → CurrencyCircleDollar). Fallback `Lightbulb`. | `src/ui/takeawayIcon.ts` |
 | **Map data** | Styled Mapbox + **local GeoJSON** (Saadiyat / Yas). Heat, corridors, and POIs are authored in `saadiyat.ts` / `yas.ts`. Not live traffic, not a tile API beyond the basemap. Map is `interactive: false`. | `MobilityMap.tsx` |
@@ -86,7 +86,7 @@ Named ramp in `src/index.css` (comments: AES Display / Title / Lead / Body / UI 
 --chat-title-size 22px         showcase clamp(24px, 2.2vw, 40px)
 ```
 
-Topic **card title** is deliberately larger than `--type-title` (greeting): 30px desktop / 48px showcase. That is so the photo title outranks the 18px/28px blurb. Do not “fix” it by tying the card title to `--type-title`.
+Topic **card type** is hardcoded, not the greeting tokens. Title **30px desktop / 40px showcase** so the photo title outranks the **18px / 24px** blurb. Questions use `--type-ui` (**14 / 16**). Do not “fix” hierarchy by tying the card title to `--type-title`, and do not restore the old 48 / 28 showcase sizes.
 
 Content width:
 
@@ -108,18 +108,20 @@ Briefing and analysis stacks are `width: var(--content-width)` and horizontally 
 CSS contract:
 
 ```css
-.glass { fill + 1px stroke + backdrop-filter blur(26px) } /* fallback if WebGL fails */
+.glass { fill + 1px --glass-stroke (0.22) + inset 0 1px 0 rgba(255,255,255,0.28) + blur(26px) }
 .has-liquid-glass .liquid-glass {
   background: rgba(0, 0, 0, 0.1);
-  border-color: transparent;
+  border: 1px solid var(--glass-stroke); /* keep the rim; do not set transparent */
   backdrop-filter: none;
-  box-shadow: 0 12px 16px -14px rgba(8, 6, 10, 0.32); /* bottom contact only */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28), /* top-edge catch light */
+    0 12px 16px -14px rgba(8, 6, 10, 0.32);  /* tucked bottom contact */
 }
 ```
 
-**Forbidden:** four-corner shadows, extra `box-shadow` on cards/chips/prompt, `filter: drop-shadow` on panes, raising `--glass-blur` by stacking CSS blur on top of the shader.
+**Forbidden:** four-corner shadows, extra `box-shadow` on cards/chips/prompt, `filter: drop-shadow` on panes, raising `--glass-blur` by stacking CSS blur on top of the shader, dropping the inset rim.
 
-Allowed exceptions already in CSS: prompt listening ring (`0 0 0 1px` + bottom contact) and `box-shadow: none` on the map host / Mapbox popup.
+Allowed exceptions already in CSS: prompt listening ring (inset highlight + `0 0 0 1px` + bottom contact) and `box-shadow: none` on the map host / Mapbox popup.
 
 Mark a surface `.glass.liquid-glass` to opt into the shader. The engine skips panes inside `.voice-dim.is-off`.
 
@@ -141,25 +143,28 @@ Cards use `--entry-card-gap` (38px showcase / 16px desktop), radius 20/16, previ
 
 ### Topic cards
 
-`ScenarioCards` in `KpiDeck.tsx` (filename is historical — these are **scenario cards**, not a KPI deck). Three equal columns.
+`ScenarioCards` in `KpiDeck.tsx` (filename is historical — these are **scenario cards**, not a KPI deck). **Four** equal columns.
 
 **Structure, top to bottom:**
 
-1. **Hero** — `aspect-ratio: 4 / 3` (`--hero-aspect`), 20px radius, photo `object-fit: cover`, cyan fade `linear-gradient(180deg, transparent 52.4%, rgba(59, 239, 255, 0.8))`, **number + title** (serif) sitting on the fade. `onLoad` may set the hero to the image’s natural ratio; CSS default must remain 4:3.
-2. **Body** — 12px inner pad, gap `--space-row`.
-3. **Blurb** — sans, 18px desktop / 28px showcase, **`min-height: 2em * line-height`** so a one-line blurb does not collapse the card. Tolls currently reuses the transit blurb; do not “fix” height by deleting the min-height.
-4. **Questions** — three rows. Separators are `border-top: 1px solid rgba(255, 255, 255, 0.2)` + **`mix-blend-mode: plus-lighter`** (the 20% plus-lighter rule). Hover/focus: siblings `opacity: 0.32`, active row `opacity: 1`, Phosphor `ArrowRight` 16 slides in from the right.
+1. **Hero** — `aspect-ratio: 4 / 3` (`--hero-aspect`), 20px radius, photo `object-fit: cover`, cyan fade `linear-gradient(180deg, transparent 52.4%, rgba(59, 239, 255, 0.8))`, **number + title** (serif) sitting on the fade. `onLoad` may set the hero to the image’s natural ratio; CSS default must remain 4:3. Transit hero is the current `mass-transit.jpg` (replaced). Land Use is `land-use.jpg`.
+2. **Body** — 12px inner pad, `justify-content: space-between` (no row gap). Blurb stays top; questions pin to the bottom.
+3. **Blurb** — sans, **18px desktop / 24px showcase**, **`min-height: 2em * line-height`** so a one-line blurb does not collapse the card. Tolls currently reuses the transit blurb; do not “fix” height by deleting the min-height.
+4. **Questions** — three rows, pinned to the bottom of the body. Separators are `border-top: 1px solid rgba(255, 255, 255, 0.2)` + **`mix-blend-mode: plus-lighter`** (the 20% plus-lighter rule). Hover/focus: siblings `opacity: 0.32`, active row `opacity: 1`, Phosphor `ArrowRight` 16 slides in from the right.
 
-Card chrome: `padding: var(--space-card)` (8 showcase / 12 desktop), `border-radius: 24px`, `gap: 8px`, `.glass.liquid-glass`.
+Card chrome: `padding: var(--space-card)` (8 showcase / 12 desktop), `border-radius: 24px`, `gap: 8px`, `min-height: 590px` (≈570 used + 20 so space-between opens a gap), `.glass.liquid-glass`. Below 1100px, `min-height` resets to `0` when the row stacks.
 
-Do not put the title under the photo. Do not move questions above the blurb. Do not add a fourth card without a Figma pass.
+Do not put the title under the photo. Do not move questions above the blurb. Do not collapse to three cards.
 
 ### Greeting and agent cadence
 
 After the Executive fly-in (`FLY_SECONDS = 2.8`):
 
 - Clocked greeting from `App.greeting()` — always **Your Excellency**.
-- `briefingSummary` streams through `AgentText`.
+- `briefingSummary` streams through `AgentText`. Two generic sentences, no stats:
+
+  > Abu Dhabi is becoming a stacked network of rail, water, and shared fleets. Demand is absorbed on those layers — not new lanes on the highway.
+
 - Cards mount only when that stream completes (`cardsReady`).
 
 Shared timings in `src/ui/agentCadence.ts`:
@@ -255,7 +260,7 @@ Dev server is **`http://localhost:5173/`**. Parallel agents share **one** Cursor
 | --- | --- | --- |
 | `landing` | Dunes + `Begin` | First paint; back from briefing / techEntry |
 | `flying` | Dunes rise, UI gone (`FLY_MS = 2800`) | Executive |
-| `briefing` | Greeting, streamed summary, three cards, prompt | Fly timer; back from a reply |
+| `briefing` | Greeting, streamed summary, four cards, prompt | Fly timer; back from a reply |
 | `analysis` | Question chip + thinking/reply; map mounting off-screen | Card question or prompt submit |
 | `split` | Left column + map (40/60 or 33/66) | Auto after `THINK_DELAY` |
 | `technical` | Same split; evidence CTA pressed | “See evidence on map” |
@@ -290,19 +295,20 @@ Do not wire `webkitSpeechRecognition` in passing. If you add real STT, keep this
 
 ## Content
 
-`src/data/scenarios.ts` — three scenarios:
+`src/data/scenarios.ts` — four scenarios. Land Use (`landuse`) is a full mock like the others: three questions, canned reply, three takeaways, Saadiyat overlays.
 
 | id | Title | Map |
 | --- | --- | --- |
 | `transit` | Mass Transit | Saadiyat cultural heat, shuttle, cycle spine |
 | `roads` | Roads | Yas Disney heat, tram, highway pressure |
 | `tolls` | Toll Road & Pricing | Same Yas overlays (pricing narrative) |
+| `landuse` | Land Use | Same Saadiyat overlays (plots / density / waterfront) |
 
-Hero images: `public/images/mass-transit.jpg`, `roads.jpg`, `road-tolls.png`.
+Hero images: `public/images/mass-transit.jpg` (replaced), `roads.jpg`, `road-tolls.png`, `land-use.jpg`.
 
 `titleForPrompt` uses the scenario title for known questions; freeform text becomes a ≤42-character chat title.
 
-Keyword router (`matchScenario`): exact question match first; else toll/pricing/salik → `tolls`; disney/yas/road/traffic/… → `roads`; else `transit`.
+Keyword router (`matchScenario`): exact question match first; else land use / land-use / zoning / density / mixed-use / waterfront / plot → `landuse`; toll/pricing/salik → `tolls`; disney/yas/road/traffic/… → `roads`; else `transit`.
 
 ---
 
@@ -387,8 +393,8 @@ Pages deploy: `.github/workflows/pages.yml` (`npm ci`, `vite build` with `VITE_B
 ### First-run check
 
 1. One tab to `http://localhost:5173/` — landing, night dunes, two glass cards.
-2. ⌘K / Ctrl+K — Showcase selected. Switch Desktop; type and split tighten; switch back.
-3. Executive → 2.8s fly → “Good …, Your Excellency” → streamed summary → three cards.
+2. ⌘K / Ctrl+K — **Mode only** (Showcase / Desktop). Showcase is selected by default (`dune-ui-mode` fallback). The Dune color picker stays hidden (`{false && …}`); night hexes stay sand `#23395c`, zenith `#0a1824`, horizon `#122038`, moon `#bad7fd`. Switch Desktop; type and split tighten; switch back.
+3. Executive → 2.8s fly → “Good …, Your Excellency” → two-sentence summary (no stats) → **four** cards, Land Use last.
 4. Open a question — thinking mark, word-blur reply, map splits in (~0.8s), prompt recenters.
 5. Back → briefing (cards still there), not a collapsed map.
 6. Mic → constellation + canned first question. Full System → dunes + back only.

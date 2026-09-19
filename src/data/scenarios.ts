@@ -1,8 +1,8 @@
-export type ScenarioId = 'transit' | 'roads' | 'tolls'
+export type ScenarioId = 'transit' | 'roads' | 'tolls' | 'landuse'
 export type MapFocus = 'saadiyat' | 'yas'
 
 export const briefingSummary =
-  'By 2040, Abu Dhabi moves as a stacked network: Etihad Rail to the federation, a 100 km/h tram from Zayed International into Yas, and last-mile loops across Saadiyat’s cultural district. Tourism Strategy 2030 already points to 39 million visitors; the decade after absorbs that demand on rails, water, and shared fleets — not new lanes on Sheikh Zayed Road.'
+  'Abu Dhabi is becoming a stacked network of rail, water, and shared fleets. Demand is absorbed on those layers — not new lanes on the highway.'
 
 export type Scenario = {
   id: ScenarioId
@@ -85,12 +85,47 @@ export const scenarios: Scenario[] = [
     mapFocus: 'yas',
     mapTitle: 'Abu Dhabi corridors — peak pricing, haul routes, and rail alternatives',
   },
+  {
+    id: 'landuse',
+    number: '04',
+    title: 'Land Use',
+    blurb: 'Explore density, mixed-use plots and waterfront last-mile.',
+    image: 'images/land-use.jpg',
+    questions: [
+      'Where should mixed-use density sit on Saadiyat?',
+      'How does waterfront zoning change last-mile demand?',
+      'Which plots stay cultural versus residential?',
+    ],
+    reply:
+      'By 2040 the Saadiyat cultural shore is a completed mixed-use district, not a museum campus with empty plots between gates. Guggenheim Abu Dhabi, Zayed National Museum, the Natural History Museum, and Louvre sit on one walkable waterfront, but the decade’s question is what fills the plots between them — hotel, residential, or cultural buffer. Put housing and ground-floor retail on the inland side of the spine, keep the waterfront civic, and last-mile hops stay under a kilometre. Scatter density across the island and every visitor trip becomes a car trip back to the hotel driveway.',
+    analysis: [
+      'Concentrate mixed-use on the inland plots so the museum shore stays civic and walkable.',
+      'Waterfront zoning that forbids driveway hotels keeps last-mile demand on the shuttle and cycle spine.',
+      'A cultural-first plot map — Louvre to Guggenheim — is the 2040 land-use rule; residential fills the gaps, not the gates.',
+    ],
+    mapLayers: ['visitors-heat', 'shuttle-corridor', 'cycle-spine', 'pois-culture'],
+    mapFocus: 'saadiyat',
+    mapTitle: 'Saadiyat Island, 2040 — cultural plots, mixed-use density, and waterfront last-mile',
+  },
 ]
 
 export function matchScenario(text: string): ScenarioId {
   const t = text.toLowerCase().trim()
   const exact = scenarios.find((s) => s.questions.some((q) => q.toLowerCase() === t))
   if (exact) return exact.id
+  if (
+    t.includes('land use') ||
+    t.includes('land-use') ||
+    t.includes('landuse') ||
+    t.includes('zoning') ||
+    t.includes('density') ||
+    t.includes('mixed-use') ||
+    t.includes('mixed use') ||
+    t.includes('waterfront') ||
+    t.includes('plot')
+  ) {
+    return 'landuse'
+  }
   if (t.includes('toll') || t.includes('pricing') || t.includes('salik') || t.includes('charge')) {
     return 'tolls'
   }
