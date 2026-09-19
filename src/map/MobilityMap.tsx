@@ -29,9 +29,13 @@ import {
 } from '../data/yas'
 import type { MapFocus } from '../data/scenarios'
 
-const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+/** Public demo token (`pk.*`). Restrict URLs in the Mapbox dashboard. Override with VITE_MAPBOX_TOKEN. */
+const FALLBACK_MAPBOX_TOKEN =
+  'pk.eyJ1IjoicGl4b25hbCIsImEiOiJjbHJocDZvY2cwMXAzMm1zMWZnZDhxNngxIn0.PcC8G5xFaPmXUGOY2h2tmw'
+
+const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN?.trim() || FALLBACK_MAPBOX_TOKEN
 const STYLE =
-  import.meta.env.VITE_MAPBOX_STYLE ||
+  import.meta.env.VITE_MAPBOX_STYLE?.trim() ||
   'mapbox://styles/pixonal/cmnpx8l6b002y01qs7t6odrgt'
 
 type Variant = 'bleed' | 'widget'
@@ -77,16 +81,29 @@ export function MobilityMap({ layers, variant = 'bleed', focus = 'saadiyat', onR
     mapRef.current = map
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
 
+    let readyNotified = false
+    const notifyReady = () => {
+      if (readyNotified) return
+      readyNotified = true
+      requestAnimationFrame(() => onReadyRef.current?.())
+    }
+
     const onStyleReady = () => {
       paintOverlays(map)
       applyLayers(map, layersRef.current, variantRef.current, focusRef.current)
       map.resize()
       frameRegion(map, focusRef.current, 0)
-      map.once('idle', () => onReadyRef.current?.())
+      map.once('idle', notifyReady)
+      // idle can already have passed (or never arrive while tiles stream); first styled frame is enough
+      requestAnimationFrame(() => {
+        map.resize()
+        notifyReady()
+      })
     }
 
     map.on('load', onStyleReady)
     map.on('style.load', onStyleReady)
+    if (map.loaded()) onStyleReady()
     const resize = () => {
       map.resize()
     }
@@ -97,10 +114,15 @@ export function MobilityMap({ layers, variant = 'bleed', focus = 'saadiyat', onR
     ro.observe(host.current)
     const mapHost = host.current.closest('.map-host')
     if (mapHost instanceof HTMLElement) ro.observe(mapHost)
+    const mo = new MutationObserver(() => {
+      map.resize()
+    })
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-ui-mode'] })
 
     return () => {
       window.removeEventListener('resize', resize)
       ro.disconnect()
+      mo.disconnect()
       map.remove()
       mapRef.current = null
     }

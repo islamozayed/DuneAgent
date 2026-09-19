@@ -1,6 +1,8 @@
+import { applyDuneColors } from '../data/duneColors'
 import { DUSK, STOPS, type Palette } from '../data/palettes'
 
 export const CYCLE_SECONDS = 90
+/** Land in the night-dune hold so the first frame matches the cool moonlight palette. */
 export const INITIAL_PHASE = 0.66
 
 export function resetCycle() {
@@ -40,7 +42,7 @@ export function samplePalette(phase: number): Palette {
   const t = (phase - a.t) / span
   const pa = a.palette
   const pb = b.palette
-  return {
+  return applyDuneColors({
     sandLit: lerpHex(pa.sandLit, pb.sandLit, t),
     sandShadow: lerpHex(pa.sandShadow, pb.sandShadow, t),
     skyZenith: lerpHex(pa.skyZenith, pb.skyZenith, t),
@@ -59,7 +61,7 @@ export function samplePalette(phase: number): Palette {
     bloom: lerp(pa.bloom, pb.bloom, t),
     sunElev: lerp(pa.sunElev, pb.sunElev, t),
     sunAzim: lerp(pa.sunAzim, pb.sunAzim, t),
-  }
+  })
 }
 
 export function sunDirection(palette: Palette): [number, number, number] {

@@ -1,16 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
+import { MapTrifold } from '@phosphor-icons/react/MapTrifold'
 import { scenarioById, type ScenarioId } from '../data/scenarios'
+import { iconForTakeaway } from './takeawayIcon'
 import { ThinkingMark } from './ThinkingMark'
+import { THINK_DELAY, THINK_FADE, WORD_BLUR, WORD_DURATION, WORD_EASE, streamDoneAt, wordDelay } from './agentCadence'
 
 type Props = {
   id: ScenarioId
   onRevealed: () => void
+  onSeeMap: () => void
+  technical?: boolean
 }
 
-/** Shared reply cadence — paragraph, bullets, and split handoff must use these. */
-const THINK_DELAY = 4.8
-const THINK_FADE = 0.45
 const THINK_PHRASE_MS = 1600
 const THINK_PHRASES = [
   'Reading the corridor…',
@@ -18,23 +20,21 @@ const THINK_PHRASES = [
   'Weighing last-mile options…',
   'Mapping the coastal spine…',
 ]
-const WORD_STAGGER = 0.1
-const WORD_DURATION = 0.58
-const BULLET_PAUSE = 0.4
-const BULLET_STAGGER = 0.42
-const BULLET_DURATION = 0.62
-const HOLD_AFTER = 1.0
-
-function wordDelay(index: number) {
-  return THINK_DELAY + index * WORD_STAGGER
-}
+const BULLET_PAUSE = 0.2
+const BULLET_STAGGER = 0.15
+const BULLET_DURATION = 0.28
+const HOLD_AFTER = 0.25
 
 function paragraphDoneAt(wordCount: number) {
-  return wordDelay(Math.max(wordCount - 1, 0)) + WORD_DURATION
+  return streamDoneAt(wordCount)
 }
 
 function bulletDelay(wordCount: number, index: number) {
   return paragraphDoneAt(wordCount) + BULLET_PAUSE + index * BULLET_STAGGER
+}
+
+function kickerDelay(wordCount: number) {
+  return Math.max(paragraphDoneAt(wordCount) + BULLET_PAUSE - 0.18, paragraphDoneAt(wordCount))
 }
 
 function replyDoneAt(wordCount: number, bulletCount: number) {
@@ -68,16 +68,23 @@ function ThinkingCopy() {
   )
 }
 
-export function AgentReply({ id, onRevealed }: Props) {
+export function AgentReply({ id, onRevealed, onSeeMap, technical = false }: Props) {
   const scenario = scenarioById(id)
   const words = scenario.reply.split(' ')
   const doneAt = replyDoneAt(words.length, scenario.analysis.length)
   const onRevealedRef = useRef(onRevealed)
   onRevealedRef.current = onRevealed
   const [thinking, setThinking] = useState(true)
+  const [mapCta, setMapCta] = useState(false)
 
   useEffect(() => {
-    const t = window.setTimeout(() => onRevealedRef.current(), doneAt * 1000)
+    const t = window.setTimeout(() => onRevealedRef.current(), THINK_DELAY * 1000)
+    return () => window.clearTimeout(t)
+  }, [id])
+
+  useEffect(() => {
+    setMapCta(false)
+    const t = window.setTimeout(() => setMapCta(true), doneAt * 1000)
     return () => window.clearTimeout(t)
   }, [id, doneAt])
 
@@ -110,30 +117,62 @@ export function AgentReply({ id, onRevealed }: Props) {
           <motion.span
             key={`${word}-${i}`}
             className="word"
-            initial={{ opacity: 0, filter: 'blur(10px)' }}
+            initial={{ opacity: 0, filter: `blur(${WORD_BLUR}px)` }}
             animate={{ opacity: 1, filter: 'blur(0px)' }}
             transition={{
               delay: wordDelay(i),
               duration: WORD_DURATION,
-              ease: [0.22, 1, 0.36, 1],
+              ease: WORD_EASE,
             }}
           >
             {word}
           </motion.span>
         ))}
       </p>
-      <ul className="analysis">
-        {scenario.analysis.map((line, i) => (
-          <motion.li
-            key={line}
-            initial={{ opacity: 0, filter: 'blur(8px)' }}
-            animate={{ opacity: 1, filter: 'blur(0px)' }}
-            transition={{ delay: bulletDelay(words.length, i), duration: BULLET_DURATION }}
+      <div className="analysis-takeaways">
+        <motion.h3
+          className="analysis-kicker"
+          initial={{ opacity: 0, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, filter: 'blur(0px)' }}
+          transition={{ delay: kickerDelay(words.length), duration: BULLET_DURATION }}
+        >
+          Key takeaways
+        </motion.h3>
+        <ul className="analysis">
+          {scenario.analysis.map((line, i) => {
+            const Icon = iconForTakeaway(line)
+            return (
+              <motion.li
+                key={line}
+                initial={{ opacity: 0, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, filter: 'blur(0px)' }}
+                transition={{ delay: bulletDelay(words.length, i), duration: BULLET_DURATION }}
+              >
+                <Icon className="analysis-icon" size={20} weight="regular" aria-hidden />
+                <span>{line}</span>
+              </motion.li>
+            )
+          })}
+        </ul>
+      </div>
+      <AnimatePresence>
+        {mapCta ? (
+          <motion.button
+            key="see-map"
+            type="button"
+            className={`map-evidence-btn glass liquid-glass${technical ? ' is-active' : ''}`}
+            onClick={onSeeMap}
+            aria-pressed={technical}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 6 }}
+            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
-            {line}
-          </motion.li>
-        ))}
-      </ul>
+            <MapTrifold className="map-evidence-icon" size={18} weight="regular" aria-hidden />
+            See evidence on map
+          </motion.button>
+        ) : null}
+      </AnimatePresence>
     </div>
   )
 }

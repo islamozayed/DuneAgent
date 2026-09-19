@@ -13,7 +13,7 @@ export function CycleLights({ lifted }: Props) {
   const ambient = useRef<THREE.AmbientLight>(null)
   const sunVec = useRef(new THREE.Vector3())
   const { scene } = useThree()
-  const fog = useRef(new THREE.FogExp2('#4a446c', 0.011))
+  const fog = useRef(new THREE.FogExp2('#101c2c', 0.011))
 
   if (scene.fog !== fog.current) {
     scene.fog = fog.current
@@ -39,12 +39,12 @@ export function CycleLights({ lifted }: Props) {
       ambient.current.intensity = palette.ambientIntensity
     }
     fog.current.color.set(palette.fog)
-    fog.current.density = lifted ? 0.00055 : 0.0042
+    fog.current.density = lifted ? 0.0004 : 0.0026
   })
 
   return (
     <>
-      <hemisphereLight ref={hemi} args={['#8a88c4', '#4a3858', 0.55]} />
+      <hemisphereLight ref={hemi} args={['#2a3c58', '#121c2c', 0.55]} />
       <ambientLight ref={ambient} intensity={0.4} />
       <directionalLight ref={dir} />
     </>

@@ -41,7 +41,7 @@ export function buildSandGeometry(
   const pos = geo.attributes.position
   const colors = new Float32Array(pos.count * 3)
   const sand = new THREE.Color('#ffffff')
-  const shade = new THREE.Color('#6a5340')
+  const shade = new THREE.Color('#243044')
 
   for (let i = 0; i < pos.count; i += 1) {
     const x = pos.getX(i)

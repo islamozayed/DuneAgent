@@ -10,33 +10,38 @@ import { PromptBar } from './ui/PromptBar'
 import { AgentReply } from './ui/AgentReply'
 import { AgentText } from './ui/AgentText'
 import { LiquidGlassLayer } from './ui/GlassLayer'
+import { CommandMenu } from './ui/CommandMenu'
 import { briefingSummary, scenarioById, titleForPrompt, type ScenarioId } from './data/scenarios'
 import { getVoice, subscribeVoice } from './voice'
 import { asset } from './asset'
+import { SidebarSimple } from '@phosphor-icons/react/SidebarSimple'
 
 const MobilityMap = lazy(async () => {
   const mod = await import('./map/MobilityMap')
   return { default: mod.MobilityMap }
 })
 
-type Phase = 'landing' | 'flying' | 'briefing' | 'analysis' | 'split'
+type Phase = 'landing' | 'flying' | 'briefing' | 'analysis' | 'split' | 'technical' | 'techEntry'
 
 const FLY_MS = FLY_SECONDS * 1000
 const HANDOFF_MS = 1050
 
 function greeting(): string {
   const h = new Date().getHours()
-  if (h < 12) return 'Good Morning, Your Highness'
-  if (h < 17) return 'Good Afternoon, Your Highness'
-  return 'Good Evening, Your Highness'
+  if (h < 12) return 'Good Morning, Your Excellency'
+  if (h < 17) return 'Good Afternoon, Your Excellency'
+  return 'Good Evening, Your Excellency'
 }
 
 export default function App() {
   const [phase, setPhase] = useState<Phase>('landing')
   const [replyId, setReplyId] = useState<ScenarioId | null>(null)
   const [chatTitle, setChatTitle] = useState<string | null>(null)
+  const [asked, setAsked] = useState<string | null>(null)
   const [keepDunes, setKeepDunes] = useState(true)
   const [cardsReady, setCardsReady] = useState(false)
+  const [mapReady, setMapReady] = useState(false)
+  const [mapHidden, setMapHidden] = useState(false)
   const [voicing, setVoicing] = useState(() => getVoice().mode !== 'idle')
   const flyTimer = useRef(0)
   const hello = greeting()
@@ -48,7 +53,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    if (phase === 'landing' || phase === 'flying') return
+    if (phase === 'landing' || phase === 'flying' || phase === 'techEntry') return
     if (!keepDunes) return
     const id = window.setTimeout(() => setKeepDunes(false), HANDOFF_MS)
     return () => window.clearTimeout(id)
@@ -59,8 +64,13 @@ export default function App() {
   }, [phase])
 
   useEffect(() => {
-    if (phase === 'landing') setFlyProgress(0)
+    if (phase === 'landing' || phase === 'techEntry') setFlyProgress(0)
     else if (phase !== 'flying') setFlyProgress(1)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase === 'landing' || phase === 'flying' || phase === 'techEntry') return
+    void import('./map/MobilityMap')
   }, [phase])
 
   function begin() {
@@ -71,11 +81,23 @@ export default function App() {
     flyTimer.current = window.setTimeout(() => setPhase('briefing'), FLY_MS)
   }
 
+  function beginTechnical() {
+    window.clearTimeout(flyTimer.current)
+    setKeepDunes(true)
+    setPhase('techEntry')
+  }
+
   function back() {
-    if (phase === 'split') setPhase('analysis')
-    else if (phase === 'analysis') {
+    if (phase === 'techEntry') {
+      setPhase('landing')
+      setKeepDunes(true)
+      return
+    }
+    if (phase === 'analysis' || phase === 'split' || phase === 'technical') {
       setReplyId(null)
       setChatTitle(null)
+      setAsked(null)
+      setMapHidden(false)
       setPhase('briefing')
     } else if (phase === 'briefing') {
       window.clearTimeout(flyTimer.current)
@@ -87,11 +109,19 @@ export default function App() {
   const openAnalysis = useCallback((id: ScenarioId, text?: string) => {
     setReplyId(id)
     setChatTitle(titleForPrompt(id, text))
+    setAsked(text ?? scenarioById(id).questions[0])
+    setMapHidden(false)
     setPhase('analysis')
   }, [])
 
   const goSplit = useCallback(() => {
     setPhase((current) => (current === 'analysis' ? 'split' : current))
+  }, [])
+
+  const goTechnical = useCallback(() => {
+    setPhase((current) =>
+      current === 'analysis' || current === 'split' ? 'technical' : current,
+    )
   }, [])
 
   const onPrompt = useCallback(
@@ -101,20 +131,56 @@ export default function App() {
     [openAnalysis],
   )
 
-  const showDunes = phase === 'landing' || phase === 'flying' || keepDunes
-  const dunesFading = showDunes && phase !== 'landing' && phase !== 'flying'
-  const showMapWidget = phase === 'split' && replyId !== null
-  const layers = showMapWidget ? scenarioById(replyId).mapLayers : []
+  const onMapReady = useCallback(() => setMapReady(true), [])
+
+  const inChat = phase === 'briefing' || phase === 'analysis' || phase === 'split' || phase === 'technical'
+  const inReply = phase === 'analysis' || phase === 'split' || phase === 'technical'
+  const mapRevealed = (phase === 'split' || phase === 'technical') && replyId !== null
+  const splitLayout = mapRevealed && !mapHidden
+  const showDunes = phase === 'landing' || phase === 'flying' || phase === 'techEntry' || keepDunes
+  const dunesFading = showDunes && phase !== 'landing' && phase !== 'flying' && phase !== 'techEntry'
+  const mapMounted = Boolean(replyId) && inReply
+  const showMapPane = splitLayout
+  const layers = replyId ? scenarioById(replyId).mapLayers : []
+
+  useEffect(() => {
+    if (!mapMounted) setMapReady(false)
+  }, [mapMounted])
+
+  useEffect(() => {
+    if (mapRevealed) setMapReady(true)
+  }, [mapRevealed])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (phase === 'technical') root.dataset.evidenceMode = 'technical'
+    else delete root.dataset.evidenceMode
+    if (phase === 'techEntry') root.dataset.entry = 'technical'
+    else delete root.dataset.entry
+  }, [phase])
+
+  const stageName = splitLayout ? 'split' : inReply ? 'analysis' : phase
 
   return (
-    <div className={`app stage-${phase}${voicing ? ' is-voicing' : ''}`}>
+    <div
+      className={`app stage-${stageName}${phase === 'technical' ? ' is-technical' : ''}${voicing ? ' is-voicing' : ''}`}
+    >
       <SkyBackdrop />
       {showDunes ? <DuneCanvas flying={phase === 'flying'} fading={dunesFading} /> : null}
 
-      {showMapWidget ? (
-        <div className="map-host">
+      {mapMounted && replyId ? (
+        <div
+          className={
+            showMapPane && mapReady ? 'map-host is-ready' : mapHidden && mapRevealed ? 'map-host is-stowed' : 'map-host'
+          }
+        >
           <Suspense fallback={null}>
-            <MobilityMap layers={layers} variant="widget" focus={scenarioById(replyId).mapFocus} />
+            <MobilityMap
+              layers={layers}
+              variant="widget"
+              focus={scenarioById(replyId).mapFocus}
+              onReady={onMapReady}
+            />
           </Suspense>
         </div>
       ) : null}
@@ -123,21 +189,38 @@ export default function App() {
 
       <div className="ui">
         <AnimatePresence>
-          {phase === 'landing' ? <Begin key="begin" onBegin={begin} /> : null}
+          {phase === 'landing' ? <Begin key="begin" onBegin={begin} onTechnical={beginTechnical} /> : null}
         </AnimatePresence>
 
-        {phase === 'briefing' || phase === 'analysis' || phase === 'split' ? (
+        {phase === 'techEntry' ? (
+          <div className="tech-entry-stub">
+            <button type="button" className="back-btn" onClick={back} aria-label="Back">
+              <img src={asset('icons/back.svg')} alt="" width={32} height={32} />
+            </button>
+          </div>
+        ) : null}
+
+        {inChat ? (
           <div className="chat-header">
             <button type="button" className="back-btn" onClick={back} aria-label="Back">
               <img src={asset('icons/back.svg')} alt="" width={32} height={32} />
             </button>
-            {(phase === 'analysis' || phase === 'split') && chatTitle ? (
-              <h1 className="chat-title">{chatTitle}</h1>
+            {inReply && chatTitle ? <h1 className="chat-title">{chatTitle}</h1> : null}
+            {mapRevealed ? (
+              <button
+                type="button"
+                className="map-panel-btn"
+                onClick={() => setMapHidden((hidden) => !hidden)}
+                aria-label={mapHidden ? 'Show map' : 'Hide map'}
+                aria-pressed={!mapHidden}
+              >
+                <SidebarSimple size={22} weight="regular" aria-hidden />
+              </button>
             ) : null}
           </div>
         ) : null}
 
-        {showMapWidget ? (
+        {showMapPane && mapReady ? (
           <div className="map-chrome">
             <div className="map-title">{scenarioById(replyId).mapTitle}</div>
           </div>
@@ -163,18 +246,25 @@ export default function App() {
             </motion.div>
           ) : null}
 
-          {(phase === 'analysis' || phase === 'split') && replyId ? (
-            <div className="analysis-stack">
-              <div className="question-chip glass liquid-glass">{scenarioById(replyId).question}</div>
-              <AgentReply key={replyId} id={replyId} onRevealed={goSplit} />
+          {inReply && replyId ? (
+            <div className={splitLayout ? 'analysis-stack is-split' : 'analysis-stack'}>
+              <div className="question-chip glass liquid-glass">
+                {asked ?? scenarioById(replyId).questions[0]}
+              </div>
+              <AgentReply
+                key={replyId}
+                id={replyId}
+                onRevealed={goSplit}
+                onSeeMap={goTechnical}
+                technical={phase === 'technical'}
+              />
             </div>
           ) : null}
         </div>
 
-        {phase === 'briefing' || phase === 'analysis' || phase === 'split' ? (
-          <PromptBar shifted={phase === 'split'} onSubmit={onPrompt} />
-        ) : null}
+        {inChat ? <PromptBar shifted={splitLayout} onSubmit={onPrompt} /> : null}
       </div>
+      <CommandMenu />
     </div>
   )
 }

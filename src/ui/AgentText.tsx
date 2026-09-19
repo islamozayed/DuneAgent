@@ -1,17 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-
-const THINK_DELAY = 0.32
-const WORD_STAGGER = 0.1
-const WORD_DURATION = 0.58
-
-function wordDelay(index: number) {
-  return THINK_DELAY + index * WORD_STAGGER
-}
-
-function streamDoneAt(wordCount: number) {
-  return wordDelay(Math.max(wordCount - 1, 0)) + WORD_DURATION
-}
+import { WORD_BLUR, WORD_DURATION, WORD_EASE, streamDoneAt, wordDelay } from './agentCadence'
 
 type Props = {
   text: string
@@ -37,12 +26,12 @@ export function AgentText({ text, className, onComplete }: Props) {
         <motion.span
           key={`${word}-${i}`}
           className="word"
-          initial={{ opacity: 0, filter: 'blur(10px)' }}
+          initial={{ opacity: 0, filter: `blur(${WORD_BLUR}px)` }}
           animate={{ opacity: 1, filter: 'blur(0px)' }}
           transition={{
             delay: wordDelay(i),
             duration: WORD_DURATION,
-            ease: [0.22, 1, 0.36, 1],
+            ease: WORD_EASE,
           }}
         >
           {word}

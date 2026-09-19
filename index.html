@@ -1,11 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ui-mode="showcase">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="robots" content="noindex, nofollow, noarchive" />
     <title>Dune</title>
+    <script>
+      try {
+        var mode = localStorage.getItem('dune-ui-mode')
+        document.documentElement.dataset.uiMode = mode === 'desktop' ? 'desktop' : 'showcase'
+      } catch (e) {
+        document.documentElement.dataset.uiMode = 'showcase'
+      }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

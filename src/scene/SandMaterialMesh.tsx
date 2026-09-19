@@ -25,11 +25,11 @@ export function SandMaterialMesh({ geometry, receiveShadow = true, castShadow = 
       <meshStandardMaterial
         ref={material}
         vertexColors
-        roughness={0.92}
-        metalness={0.02}
+        roughness={0.84}
+        metalness={0.04}
         normalMap={normalMap}
-        normalScale={new THREE.Vector2(0.45, 0.45)}
-        envMapIntensity={0.25}
+        normalScale={new THREE.Vector2(0.38, 0.38)}
+        envMapIntensity={0.32}
       />
     </mesh>
   )

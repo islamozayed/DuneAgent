@@ -161,7 +161,7 @@ function drawStar(
   ctx.arc(x, y, r, 0, Math.PI * 2)
   ctx.fill()
   if (glint && a > 0.16) {
-    ctx.fillStyle = `rgba(255,252,248,${Math.min(0.9, a * 0.7)})`
+    ctx.fillStyle = `rgba(230,240,255,${Math.min(0.82, a * 0.55)})`
     ctx.beginPath()
     ctx.arc(x, y, r * 0.4, 0, Math.PI * 2)
     ctx.fill()
@@ -252,8 +252,8 @@ export function paintDynamicSky(
 
   const hx = w * (0.5 + sun[0] * 0.1)
   const horizonBloom = ctx.createRadialGradient(hx, h * 1.08 + extra, 0, hx, h * 1.08 + extra, Math.max(w, h) * 0.78)
-  horizonBloom.addColorStop(0, rgba(glow, 0.48))
-  horizonBloom.addColorStop(0.45, rgba(glow, 0.14))
+  horizonBloom.addColorStop(0, rgba(glow, 0.28))
+  horizonBloom.addColorStop(0.45, rgba(glow, 0.08))
   horizonBloom.addColorStop(1, rgba(glow, 0))
   ctx.fillStyle = horizonBloom
   ctx.fillRect(0, 0, w, h)
@@ -291,9 +291,9 @@ export function paintDynamicSky(
     ctx.rotate(-0.36)
     ctx.globalAlpha = palette.starOpacity * 0.1
     const veil = ctx.createLinearGradient(0, -h * 0.09, 0, h * 0.09)
-    veil.addColorStop(0, 'rgba(176, 168, 230, 0)')
-    veil.addColorStop(0.5, 'rgba(216, 196, 255, 0.48)')
-    veil.addColorStop(1, 'rgba(176, 168, 230, 0)')
+    veil.addColorStop(0, 'rgba(140, 170, 210, 0)')
+    veil.addColorStop(0.5, 'rgba(190, 214, 240, 0.22)')
+    veil.addColorStop(1, 'rgba(140, 170, 210, 0)')
     ctx.fillStyle = veil
     ctx.fillRect(-w, -h * 0.09, w * 2, h * 0.18)
     ctx.restore()
@@ -308,7 +308,7 @@ export function paintDynamicSky(
   const blend = voiceBlend()
   const amp = voiceAmp()
 
-  const [sr, sg, sb] = hexRgb(mixHex('#efe8ff', palette.sunColor, 0.22))
+  const [sr, sg, sb] = hexRgb(mixHex('#e8f0f8', palette.sunColor, 0.18))
   const drift = (clock * 0.0028) % 1
   ctx.save()
   ctx.globalCompositeOperation = 'lighter'

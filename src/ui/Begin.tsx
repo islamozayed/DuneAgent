@@ -1,11 +1,17 @@
 import { motion } from 'motion/react'
+import { ArrowRight } from '@phosphor-icons/react/ArrowRight'
 import { asset } from '../asset'
 
 type Props = {
   onBegin: () => void
+  onTechnical: () => void
 }
 
-export function Begin({ onBegin }: Props) {
+function EntryArrow() {
+  return <ArrowRight className="entry-arrow" size={18} weight="regular" aria-hidden />
+}
+
+export function Begin({ onBegin, onTechnical }: Props) {
   return (
     <motion.div
       className="landing"
@@ -26,10 +32,32 @@ export function Begin({ onBegin }: Props) {
         <br />
         the Future of Abu Dhabi
       </h1>
-      <button type="button" className="begin glass liquid-glass" onClick={onBegin}>
-        Begin
-        <img src={asset('icons/begin-arrow.svg')} alt="" width={35} height={8} />
-      </button>
+      <div className="landing-entries">
+        <button type="button" className="entry-card glass liquid-glass" onClick={onBegin}>
+          <span className="entry-preview entry-preview--agent" aria-hidden>
+            <span className="entry-bar entry-bar--a" />
+            <span className="entry-bar entry-bar--b" />
+            <span className="entry-pill" />
+          </span>
+          <span className="entry-label">
+            Executive
+            <EntryArrow />
+          </span>
+        </button>
+        <button type="button" className="entry-card glass liquid-glass" onClick={onTechnical}>
+          <span className="entry-preview entry-preview--technical" aria-hidden>
+            <span className="entry-sidebar">
+              <span className="entry-bar entry-bar--c" />
+              <span className="entry-bar entry-bar--d" />
+            </span>
+            <span className="entry-dot" />
+          </span>
+          <span className="entry-label">
+            Full System
+            <EntryArrow />
+          </span>
+        </button>
+      </div>
     </motion.div>
   )
 }

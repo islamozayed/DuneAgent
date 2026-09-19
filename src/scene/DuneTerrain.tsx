@@ -185,8 +185,8 @@ export function DuneTerrain() {
   const rimUniforms = useRef<RimUniforms>({
     uFresnelTex: { value: fresnelMap },
     uSunDir: { value: new THREE.Vector3(-0.6, 0.4, 0.4) },
-    uSunColor: { value: new THREE.Color('#f0d4f4') },
-    uRimCool: { value: new THREE.Color('#dcc4e8') },
+    uSunColor: { value: new THREE.Color('#bad7fd') },
+    uRimCool: { value: new THREE.Color('#9ab4cc') },
     uRimStrength: { value: 1.7 },
   })
 
@@ -215,11 +215,11 @@ export function DuneTerrain() {
       <meshStandardMaterial
         ref={material}
         vertexColors
-        roughness={0.92}
-        metalness={0.02}
+        roughness={0.84}
+        metalness={0.04}
         normalMap={normalMap}
-        normalScale={new THREE.Vector2(0.45, 0.45)}
-        envMapIntensity={0.25}
+        normalScale={new THREE.Vector2(0.38, 0.38)}
+        envMapIntensity={0.32}
         polygonOffset
         polygonOffsetFactor={1}
         polygonOffsetUnits={1}

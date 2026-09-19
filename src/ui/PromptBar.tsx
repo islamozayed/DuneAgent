@@ -4,7 +4,7 @@ import { matchScenario, scenarios, type ScenarioId } from '../data/scenarios'
 import { getVoice, startVoice, stopVoice, subscribeVoice } from '../voice'
 import { asset } from '../asset'
 
-const TRANSCRIPT = scenarios[0].question
+const TRANSCRIPT = scenarios[0].questions[0]
 const WORDS = TRANSCRIPT.split(/\s+/).filter(Boolean)
 const WORD_MS = 140
 const FIRST_WORD_DELAY_MS = 180
@@ -166,7 +166,7 @@ export function PromptBar({ onSubmit, shifted = false }: Props) {
                 submit()
               }
             }}
-            placeholder={voicing ? 'Listening…' : 'Tell me which of the two you’d like to ask about'}
+            placeholder={voicing ? 'Listening…' : 'Tell me which topic you’d like to ask about'}
             aria-label="Question"
             readOnly={voicing}
           />
